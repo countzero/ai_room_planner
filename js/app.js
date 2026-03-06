@@ -129,6 +129,12 @@
     showToast('Plan exported as PNG');
   });
 
+  document.getElementById('btn-fit-view').addEventListener('click', () => {
+    CanvasRenderer.fitToView();
+    document.getElementById('zoom-display').textContent =
+      Math.round(CanvasRenderer.getZoom() * 100) + '%';
+  });
+
   document.getElementById('btn-clear').addEventListener('click', () => {
     if (confirm('Clear the entire plan? This cannot be undone.')) {
       History.push();
@@ -206,6 +212,11 @@
         break;
       case 'l':
         Tools.setTool('label');
+        break;
+      case 'f':
+        CanvasRenderer.fitToView();
+        document.getElementById('zoom-display').textContent =
+          Math.round(CanvasRenderer.getZoom() * 100) + '%';
         break;
       case 'g':
         snapCheckbox.checked = !snapCheckbox.checked;

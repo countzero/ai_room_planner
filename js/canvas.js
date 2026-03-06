@@ -637,6 +637,63 @@ const CanvasRenderer = (() => {
   }
 
   /** Export the current view as a data URL (PNG) */
+  function fitToView() {
+    const walls = Model.walls;
+    const labels = Model.labels;
+
+    if (walls.length === 0 && labels.length === 0) {
+      // No objects — reset to default view
+      zoom = 1.0;
+      offsetX = width / 2;
+      offsetY = height / 2;
+      render();
+      return;
+    }
+
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+
+    for (const w of walls) {
+      minX = Math.min(minX, w.x1, w.x2);
+      minY = Math.min(minY, w.y1, w.y2);
+      maxX = Math.max(maxX, w.x1, w.x2);
+      maxY = Math.max(maxY, w.y1, w.y2);
+    }
+
+    for (const l of labels) {
+      minX = Math.min(minX, l.x);
+      minY = Math.min(minY, l.y);
+      maxX = Math.max(maxX, l.x);
+      maxY = Math.max(maxY, l.y);
+    }
+
+    const bboxW = maxX - minX;
+    const bboxH = maxY - minY;
+    const centerX = (minX + maxX) / 2;
+    const centerY = (minY + maxY) / 2;
+
+    const pad = 60; // screen-space padding in pixels
+
+    if (bboxW === 0 && bboxH === 0) {
+      // Single point — center on it at zoom 1
+      zoom = 1.0;
+      offsetX = width / 2 - centerX * zoom;
+      offsetY = height / 2 - centerY * zoom;
+      render();
+      return;
+    }
+
+    const availW = width - 2 * pad;
+    const availH = height - 2 * pad;
+
+    zoom = Math.min(availW / bboxW, availH / bboxH);
+    zoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom));
+
+    offsetX = width / 2 - centerX * zoom;
+    offsetY = height / 2 - centerY * zoom;
+
+    render();
+  }
+
   function exportPNG() {
     // Render at current view
     render();
@@ -661,6 +718,7 @@ const CanvasRenderer = (() => {
     setWallDrawPoints,
     setSnapIndicator,
     setHoverWall,
+    fitToView,
     exportPNG,
     get canvas() { return canvas; },
     get width() { return width; },

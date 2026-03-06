@@ -118,6 +118,26 @@ html, body {
   accent-color: var(--accent);
 }
 
+.fit-view-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+
+.fit-view-btn:hover {
+  background: var(--accent);
+  color: #fff;
+}
+
 .zoom-display {
   padding: 3px 8px;
   background: var(--bg-subtle);
