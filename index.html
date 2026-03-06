@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2D Room Planner</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <!-- Top Toolbar -->
+  <header id="toolbar">
+    <div class="toolbar-group toolbar-tools">
+      <button class="tool-btn active" data-tool="select" title="Select (V)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 3l7.07 16.97 2.51-7.39 7.39-2.51L3 3z" fill="currentColor"/></svg>
+        <span>Select</span>
+      </button>
+      <button class="tool-btn" data-tool="wall" title="Draw Wall (W)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M3 3h18v2H3V3zm0 16h18v2H3v-2zm0-8h18v2H3v-2z" fill="currentColor"/></svg>
+        <span>Wall</span>
+      </button>
+      <button class="tool-btn" data-tool="door" title="Place Door (D)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M19 19V5c0-1.1-.9-2-2-2H7c-1.1 0-2 .9-2 2v14H3v2h18v-2h-2zm-8-6c.55 0 1-.45 1-1s-.45-1-1-1-1 .45-1 1 .45 1 1 1z" fill="currentColor"/></svg>
+        <span>Door</span>
+      </button>
+      <button class="tool-btn" data-tool="window" title="Place Window (N)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><line x1="12" y1="3" x2="12" y2="21" stroke="currentColor" stroke-width="2"/><line x1="3" y1="12" x2="21" y2="12" stroke="currentColor" stroke-width="2"/></svg>
+        <span>Window</span>
+      </button>
+      <button class="tool-btn" data-tool="label" title="Add Label (L)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M5 4v3h5.5v12h3V7H19V4H5z" fill="currentColor"/></svg>
+        <span>Label</span>
+      </button>
+    </div>
+
+    <div class="toolbar-separator"></div>
+
+    <div class="toolbar-group toolbar-actions">
+      <button class="action-btn" id="btn-undo" title="Undo (Ctrl+Z)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M12.5 8c-2.65 0-5.05 1.04-6.83 2.73L2.5 7.5v9h9l-3.19-3.19c1.33-1.27 3.1-2.06 5.19-2.06 3.37 0 6.22 2.14 7.29 5.13l2.15-.71C21.5 11.82 17.35 8 12.5 8z" fill="currentColor"/></svg>
+        <span>Undo</span>
+      </button>
+      <button class="action-btn" id="btn-redo" title="Redo (Ctrl+Y)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M18.33 10.73C16.55 9.04 14.15 8 11.5 8c-4.85 0-9 3.82-10.44 7.67l2.15.71c1.07-2.99 3.92-5.13 7.29-5.13 2.09 0 3.86.79 5.19 2.06L12.5 16.5h9v-9l-3.17 3.23z" fill="currentColor"/></svg>
+        <span>Redo</span>
+      </button>
+    </div>
+
+    <div class="toolbar-separator"></div>
+
+    <div class="toolbar-group toolbar-actions">
+      <button class="action-btn" id="btn-save" title="Save (Ctrl+S)">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M17 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z" fill="currentColor"/></svg>
+        <span>Save</span>
+      </button>
+      <button class="action-btn" id="btn-load" title="Load">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z" fill="currentColor" transform="rotate(180 12 12)"/></svg>
+        <span>Load</span>
+      </button>
+      <button class="action-btn" id="btn-export-png" title="Export PNG">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z" fill="currentColor"/></svg>
+        <span>Export</span>
+      </button>
+      <button class="action-btn" id="btn-clear" title="Clear All">
+        <svg viewBox="0 0 24 24" width="18" height="18"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" fill="currentColor"/></svg>
+        <span>Clear</span>
+      </button>
+    </div>
+
+    <div class="toolbar-spacer"></div>
+
+    <div class="toolbar-group toolbar-info">
+      <label class="snap-toggle" title="Grid Snapping (G)">
+        <input type="checkbox" id="snap-enabled" checked>
+        <span>Snap</span>
+      </label>
+      <span id="zoom-display" class="zoom-display">100%</span>
+      <span id="cursor-pos" class="cursor-pos">0.00, 0.00 m</span>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <div id="main-content">
+    <!-- Left Property Panel -->
+    <aside id="sidebar">
+      <div id="properties-panel">
+        <h3 class="panel-title">Properties</h3>
+        <div id="props-content">
+          <p class="props-hint">Select an element to edit its properties, or use a tool to start drawing.</p>
+        </div>
+      </div>
+
+      <div id="rooms-panel">
+        <h3 class="panel-title">Rooms</h3>
+        <div id="rooms-list">
+          <p class="props-hint">Closed wall shapes will appear here as rooms.</p>
+        </div>
+      </div>
+
+      <div id="help-panel">
+        <h3 class="panel-title">Shortcuts</h3>
+        <div class="shortcuts-list">
+          <div class="shortcut"><kbd>V</kbd> Select</div>
+          <div class="shortcut"><kbd>W</kbd> Wall</div>
+          <div class="shortcut"><kbd>D</kbd> Door</div>
+          <div class="shortcut"><kbd>N</kbd> Window</div>
+          <div class="shortcut"><kbd>L</kbd> Label</div>
+          <div class="shortcut"><kbd>Esc</kbd> Cancel / Deselect</div>
+          <div class="shortcut"><kbd>Del</kbd> Delete selected</div>
+          <div class="shortcut"><kbd>Ctrl+Z</kbd> Undo</div>
+          <div class="shortcut"><kbd>Ctrl+Y</kbd> Redo</div>
+          <div class="shortcut"><kbd>Ctrl+S</kbd> Export JSON</div>
+          <div class="shortcut"><kbd>G</kbd> Toggle snap</div>
+          <div class="shortcut"><kbd>Scroll</kbd> Zoom</div>
+          <div class="shortcut"><kbd>Mid-click</kbd> Pan</div>
+          <div class="shortcut"><kbd>Space+Drag</kbd> Pan</div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Canvas Area -->
+    <div id="canvas-container">
+      <canvas id="planner-canvas"></canvas>
+    </div>
+  </div>
+
+  <!-- Hidden file input for loading JSON -->
+  <input type="file" id="file-input" accept=".json" style="display:none">
+
+  <!-- Scripts -->
+  <script src="js/geometry.js"></script>
+  <script src="js/model.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/canvas.js"></script>
+  <script src="js/tools.js"></script>
+  <script src="js/storage.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
