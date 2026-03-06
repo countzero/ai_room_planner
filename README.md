@@ -2,6 +2,8 @@
 
 A browser-based 2D floor plan editor built with vanilla JavaScript and HTML5 Canvas. No frameworks, no build tools, no dependencies -- just open `index.html` in a browser and start drawing.
 
+**[Try the Live Demo](https://sandbox.finnkumkar.de/ai/room_planner)** -- use it directly in your browser, no download needed.
+
 ## Features
 
 - **Wall drawing** -- click to place polyline chains, click the start point to close into a polygon, or double-click to end an open chain
@@ -24,12 +26,15 @@ A browser-based 2D floor plan editor built with vanilla JavaScript and HTML5 Can
 
 ## Quick Start
 
-```bash
-git clone <repository-url>
-cd ai_room_planner
-```
+**[Try the live demo](https://sandbox.finnkumkar.de/ai/room_planner)** -- no download needed.
 
-Open `index.html` in any modern browser. That's it -- no install, no build step, no server required.
+### Run locally
+
+1. Download the `.zip` from the [latest release](../../releases/latest)
+2. Extract the archive
+3. Open `index.html` in any modern browser
+
+That's it -- no install, no build step, no server required.
 
 ## Usage Guide
 
