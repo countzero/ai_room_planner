@@ -125,6 +125,9 @@ const Tools = (() => {
   // ========== Event Handlers ==========
 
   function onMouseDown(e) {
+    // Ignore clicks on the label input overlay
+    if (e.target.closest && e.target.closest('.label-input-overlay')) return;
+
     const rect = CanvasRenderer.canvas.getBoundingClientRect();
     const sx = e.clientX - rect.left;
     const sy = e.clientY - rect.top;
@@ -551,11 +554,16 @@ const Tools = (() => {
     input.value = '';
     overlay.appendChild(input);
 
+    // Prevent clicks on the overlay from propagating to the canvas
+    overlay.addEventListener('mousedown', (e) => e.stopPropagation());
+
     const cont = container();
     cont.appendChild(overlay);
-    input.focus();
 
+    let finished = false;
     function finish() {
+      if (finished) return;
+      finished = true;
       const text = input.value.trim();
       if (text) {
         History.push();
@@ -569,11 +577,15 @@ const Tools = (() => {
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') finish();
-      if (e.key === 'Escape') { overlay.remove(); render(); }
+      if (e.key === 'Escape') { finished = true; overlay.remove(); render(); }
       e.stopPropagation();
     });
 
-    input.addEventListener('blur', finish);
+    // Defer blur listener so it doesn't fire during the initial click
+    requestAnimationFrame(() => {
+      input.addEventListener('blur', finish);
+      input.focus();
+    });
   }
 
   function startLabelEdit(label, sx, sy) {
@@ -589,12 +601,16 @@ const Tools = (() => {
     input.value = label.text;
     overlay.appendChild(input);
 
+    // Prevent clicks on the overlay from propagating to the canvas
+    overlay.addEventListener('mousedown', (e) => e.stopPropagation());
+
     const cont = container();
     cont.appendChild(overlay);
-    input.focus();
-    input.select();
 
+    let finished = false;
     function finish() {
+      if (finished) return;
+      finished = true;
       const text = input.value.trim();
       if (text) {
         History.push();
@@ -608,11 +624,16 @@ const Tools = (() => {
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') finish();
-      if (e.key === 'Escape') { overlay.remove(); render(); }
+      if (e.key === 'Escape') { finished = true; overlay.remove(); render(); }
       e.stopPropagation();
     });
 
-    input.addEventListener('blur', finish);
+    // Defer blur listener so it doesn't fire during the initial click
+    requestAnimationFrame(() => {
+      input.addEventListener('blur', finish);
+      input.focus();
+      input.select();
+    });
   }
 
   // ========== Delete ==========
