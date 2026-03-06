@@ -93,6 +93,11 @@ const SvgExport = (() => {
       expand(mid.x + normal.x * (offsetDist + 20), mid.y + normal.y * (offsetDist + 20));
     }
 
+    // Overall dimension lines (offset 60cm beyond plan extents + text space)
+    if (Model.walls.length > 0) {
+      expand(maxX + 100, maxY + 100);
+    }
+
     // If nothing exists, default to a small area around origin
     if (minX === Infinity) {
       minX = -200; minY = -200;
@@ -475,6 +480,96 @@ const SvgExport = (() => {
     return lines.join('\n');
   }
 
+  function svgOverallDimensions(scale) {
+    const walls = Model.walls;
+    if (walls.length === 0) return '';
+
+    // Compute bounding box of all wall endpoints
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const w of walls) {
+      minX = Math.min(minX, w.x1, w.x2);
+      minY = Math.min(minY, w.y1, w.y2);
+      maxX = Math.max(maxX, w.x1, w.x2);
+      maxY = Math.max(maxY, w.y1, w.y2);
+    }
+
+    const planW = maxX - minX;
+    const planH = maxY - minY;
+    if (planW < 1 && planH < 1) return '';
+
+    const lines = [];
+    lines.push('  <g id="overall-dimensions">');
+
+    const font = 'system-ui, -apple-system, sans-serif';
+    const fontSize = 11 * scale;
+    const offset = 60;       // distance from plan edge to dimension line (world cm)
+    const extLen = 10;       // extension line overshoot
+    const tickSize = 4 * scale; // 45-degree tick half-length
+    const dimColor = '#333';
+    const lineColor = '#666';
+    const extColor = '#999';
+    const extStroke = STROKE_DIM_TICK * scale;
+    const dimStroke = STROKE_DIM_TICK * scale * 1.2;
+    const tickStroke = STROKE_MEDIUM * scale;
+
+    // ── Horizontal dimension (below the plan) ──
+    if (planW >= 1) {
+      const yPos = maxY + offset;
+
+      // Extension lines
+      lines.push(`    <line x1="${minX}" y1="${maxY + 10}" x2="${minX}" y2="${yPos + extLen}" stroke="${extColor}" stroke-width="${extStroke}"/>`);
+      lines.push(`    <line x1="${maxX}" y1="${maxY + 10}" x2="${maxX}" y2="${yPos + extLen}" stroke="${extColor}" stroke-width="${extStroke}"/>`);
+
+      // Dimension line
+      lines.push(`    <line x1="${minX}" y1="${yPos}" x2="${maxX}" y2="${yPos}" stroke="${lineColor}" stroke-width="${dimStroke}"/>`);
+
+      // Tick marks (45-degree)
+      for (const x of [minX, maxX]) {
+        lines.push(`    <line x1="${x - tickSize}" y1="${yPos + tickSize}" x2="${x + tickSize}" y2="${yPos - tickSize}" stroke="${dimColor}" stroke-width="${tickStroke}"/>`);
+      }
+
+      // Label
+      const meters = planW / 100;
+      const text = meters.toFixed(2) + ' m';
+      const midX = (minX + maxX) / 2;
+      const textW = text.length * fontSize * 0.55 + 8 * scale;
+      const textH = fontSize + 6 * scale;
+      lines.push(`    <rect x="${midX - textW / 2}" y="${yPos + 3 * scale}" width="${textW}" height="${textH}" fill="#fafafa" fill-opacity="0.9" stroke="none"/>`);
+      lines.push(`    <text x="${midX}" y="${yPos + 3 * scale + textH / 2}" text-anchor="middle" dominant-baseline="central" font-family="${font}" font-size="${fontSize}" font-weight="bold" fill="${dimColor}">${escapeXml(text)}</text>`);
+    }
+
+    // ── Vertical dimension (to the right of the plan) ──
+    if (planH >= 1) {
+      const xPos = maxX + offset;
+
+      // Extension lines
+      lines.push(`    <line x1="${maxX + 10}" y1="${minY}" x2="${xPos + extLen}" y2="${minY}" stroke="${extColor}" stroke-width="${extStroke}"/>`);
+      lines.push(`    <line x1="${maxX + 10}" y1="${maxY}" x2="${xPos + extLen}" y2="${maxY}" stroke="${extColor}" stroke-width="${extStroke}"/>`);
+
+      // Dimension line
+      lines.push(`    <line x1="${xPos}" y1="${minY}" x2="${xPos}" y2="${maxY}" stroke="${lineColor}" stroke-width="${dimStroke}"/>`);
+
+      // Tick marks (45-degree)
+      for (const y of [minY, maxY]) {
+        lines.push(`    <line x1="${xPos - tickSize}" y1="${y + tickSize}" x2="${xPos + tickSize}" y2="${y - tickSize}" stroke="${dimColor}" stroke-width="${tickStroke}"/>`);
+      }
+
+      // Label (rotated -90 degrees)
+      const meters = planH / 100;
+      const text = meters.toFixed(2) + ' m';
+      const midY = (minY + maxY) / 2;
+      const textW = text.length * fontSize * 0.55 + 8 * scale;
+      const textH = fontSize + 6 * scale;
+      lines.push(`    <g transform="translate(${xPos},${midY}) rotate(-90)">`);
+      lines.push(`      <rect x="${-textW / 2}" y="${3 * scale}" width="${textW}" height="${textH}" fill="#fafafa" fill-opacity="0.9" stroke="none"/>`);
+      lines.push(`      <text x="0" y="${3 * scale + textH / 2}" text-anchor="middle" dominant-baseline="central" font-family="${font}" font-size="${fontSize}" font-weight="bold" fill="${dimColor}">${escapeXml(text)}</text>`);
+      lines.push('    </g>');
+    }
+
+    lines.push('  </g>');
+    return lines.join('\n');
+  }
+
   function svgLabels(scale) {
     const lines = [];
     lines.push('  <g id="labels">');
@@ -542,6 +637,7 @@ const SvgExport = (() => {
     parts.push(svgDoors(scale));
     parts.push(svgWindows(scale));
     parts.push(svgDimensions(scale));
+    parts.push(svgOverallDimensions(scale));
     parts.push(svgLabels(scale));
 
     parts.push('</svg>');

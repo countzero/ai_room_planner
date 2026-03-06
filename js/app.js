@@ -10,6 +10,7 @@
   const canvasContainer = document.getElementById('canvas-container');
   const propsContent = document.getElementById('props-content');
   const roomsList = document.getElementById('rooms-list');
+  const roomsSummary = document.getElementById('rooms-summary');
   const fileInput = document.getElementById('file-input');
   const snapCheckbox = document.getElementById('snap-enabled');
 
@@ -485,6 +486,7 @@
     const rooms = Model.rooms;
     if (rooms.length === 0) {
       roomsList.innerHTML = '<p class="props-hint">Closed wall shapes will appear here as rooms.</p>';
+      updateRoomsSummary(rooms);
       return;
     }
 
@@ -514,6 +516,24 @@
         requestRender();
       });
     });
+
+    updateRoomsSummary(rooms);
+  }
+
+  function updateRoomsSummary(rooms) {
+    // Nothing to show if no rooms exist
+    if (rooms.length === 0) {
+      roomsSummary.innerHTML = '';
+      return;
+    }
+
+    const totalArea = rooms.reduce((sum, r) => sum + r.area, 0) / 10000;
+    roomsSummary.innerHTML = `
+      <div class="summary-row">
+        <span class="summary-label">Total</span>
+        <span class="summary-value">${totalArea.toFixed(1)} m&sup2;</span>
+      </div>
+    `;
   }
 
   // ===== Toast =====

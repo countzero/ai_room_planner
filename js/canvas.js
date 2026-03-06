@@ -117,6 +117,7 @@ const CanvasRenderer = (() => {
     drawDoors();
     drawWindows();
     drawDimensions();
+    drawOverallDimensions();
     drawLabels();
     drawGhost();
     drawSnapIndicator();
@@ -481,6 +482,166 @@ const CanvasRenderer = (() => {
       ctx.stroke();
       ctx.setLineDash([]);
     }
+    ctx.restore();
+  }
+
+  function drawOverallDimensions() {
+    const walls = Model.walls;
+    if (walls.length === 0) return;
+
+    // Compute bounding box of all wall endpoints
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const w of walls) {
+      if (w.x1 < minX) minX = w.x1;
+      if (w.x2 < minX) minX = w.x2;
+      if (w.y1 < minY) minY = w.y1;
+      if (w.y2 < minY) minY = w.y2;
+      if (w.x1 > maxX) maxX = w.x1;
+      if (w.x2 > maxX) maxX = w.x2;
+      if (w.y1 > maxY) maxY = w.y1;
+      if (w.y2 > maxY) maxY = w.y2;
+    }
+
+    const planW = maxX - minX;
+    const planH = maxY - minY;
+    if (planW < 1 && planH < 1) return;
+
+    ctx.save();
+    const font = getComputedStyle(document.body).fontFamily;
+
+    // Offset from the plan edge (in world units)
+    const offset = 60;    // distance from plan edge to dimension line
+    const extLen = 10;    // extension line overshoot past dimension line
+    const tickSize = 4;   // half-length of the 45-degree tick mark (screen px)
+
+    const dimColor = '#333';
+    const lineColor = '#666';
+    const extColor = '#999';
+
+    // ── Horizontal dimension (below the plan) ──
+    if (planW >= 1) {
+      const yPos = maxY + offset; // world Y for the dimension line
+
+      // Extension lines (vertical, from plan edge down to dimension line + overshoot)
+      const sExtTop1 = worldToScreen(minX, maxY + 10);
+      const sExtBot1 = worldToScreen(minX, yPos + extLen);
+      const sExtTop2 = worldToScreen(maxX, maxY + 10);
+      const sExtBot2 = worldToScreen(maxX, yPos + extLen);
+
+      ctx.strokeStyle = extColor;
+      ctx.lineWidth = 0.7;
+      ctx.setLineDash([]);
+      ctx.beginPath();
+      ctx.moveTo(sExtTop1.x, sExtTop1.y);
+      ctx.lineTo(sExtBot1.x, sExtBot1.y);
+      ctx.moveTo(sExtTop2.x, sExtTop2.y);
+      ctx.lineTo(sExtBot2.x, sExtBot2.y);
+      ctx.stroke();
+
+      // Dimension line (solid)
+      const sDL1 = worldToScreen(minX, yPos);
+      const sDL2 = worldToScreen(maxX, yPos);
+
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sDL1.x, sDL1.y);
+      ctx.lineTo(sDL2.x, sDL2.y);
+      ctx.stroke();
+
+      // Tick marks at endpoints (45-degree architectural serifs)
+      ctx.strokeStyle = dimColor;
+      ctx.lineWidth = 1.5;
+      for (const sp of [sDL1, sDL2]) {
+        ctx.beginPath();
+        ctx.moveTo(sp.x - tickSize, sp.y + tickSize);
+        ctx.lineTo(sp.x + tickSize, sp.y - tickSize);
+        ctx.stroke();
+      }
+
+      // Label
+      const meters = planW / 100;
+      const text = meters.toFixed(2) + ' m';
+      ctx.font = 'bold 11px ' + font;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillStyle = dimColor;
+      const midX = (sDL1.x + sDL2.x) / 2;
+      const midY = sDL1.y;
+
+      // Background
+      const metrics = ctx.measureText(text);
+      const tw = metrics.width + 8;
+      const th = 15;
+      ctx.fillStyle = 'rgba(250,250,250,0.9)';
+      ctx.fillRect(midX - tw / 2, midY + 3, tw, th);
+      ctx.fillStyle = dimColor;
+      ctx.fillText(text, midX, midY + 5);
+    }
+
+    // ── Vertical dimension (to the right of the plan) ──
+    if (planH >= 1) {
+      const xPos = maxX + offset; // world X for the dimension line
+
+      // Extension lines (horizontal, from plan edge right to dimension line + overshoot)
+      const sExtLeft1 = worldToScreen(maxX + 10, minY);
+      const sExtRight1 = worldToScreen(xPos + extLen, minY);
+      const sExtLeft2 = worldToScreen(maxX + 10, maxY);
+      const sExtRight2 = worldToScreen(xPos + extLen, maxY);
+
+      ctx.strokeStyle = extColor;
+      ctx.lineWidth = 0.7;
+      ctx.beginPath();
+      ctx.moveTo(sExtLeft1.x, sExtLeft1.y);
+      ctx.lineTo(sExtRight1.x, sExtRight1.y);
+      ctx.moveTo(sExtLeft2.x, sExtLeft2.y);
+      ctx.lineTo(sExtRight2.x, sExtRight2.y);
+      ctx.stroke();
+
+      // Dimension line (solid)
+      const sDL1 = worldToScreen(xPos, minY);
+      const sDL2 = worldToScreen(xPos, maxY);
+
+      ctx.strokeStyle = lineColor;
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(sDL1.x, sDL1.y);
+      ctx.lineTo(sDL2.x, sDL2.y);
+      ctx.stroke();
+
+      // Tick marks at endpoints (45-degree architectural serifs)
+      ctx.strokeStyle = dimColor;
+      ctx.lineWidth = 1.5;
+      for (const sp of [sDL1, sDL2]) {
+        ctx.beginPath();
+        ctx.moveTo(sp.x - tickSize, sp.y + tickSize);
+        ctx.lineTo(sp.x + tickSize, sp.y - tickSize);
+        ctx.stroke();
+      }
+
+      // Label (rotated 90 degrees)
+      const meters = planH / 100;
+      const text = meters.toFixed(2) + ' m';
+      ctx.font = 'bold 11px ' + font;
+      const midSX = sDL1.x;
+      const midSY = (sDL1.y + sDL2.y) / 2;
+
+      // Background (rotated)
+      const metrics = ctx.measureText(text);
+      const tw = metrics.width + 8;
+      const th = 15;
+      ctx.save();
+      ctx.translate(midSX, midSY);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillStyle = 'rgba(250,250,250,0.9)';
+      ctx.fillRect(-tw / 2, 3, tw, th);
+      ctx.fillStyle = dimColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'top';
+      ctx.fillText(text, 0, 5);
+      ctx.restore();
+    }
+
     ctx.restore();
   }
 

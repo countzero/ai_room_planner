@@ -323,6 +323,38 @@ html, body {
   flex-shrink: 0;
 }
 
+/* Rooms summary */
+#rooms-summary:empty {
+  display: none;
+}
+
+#rooms-summary {
+  border-top: 1px solid var(--border);
+  padding: 8px 14px 10px;
+  font-size: 11px;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.summary-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.summary-value {
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
 /* Shortcuts */
 .shortcuts-list {
   padding: 4px 14px 12px;
