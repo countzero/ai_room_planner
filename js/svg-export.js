@@ -238,7 +238,7 @@ const SvgExport = (() => {
 
       // Polygon fill
       const pts = room.polygon.map(p => `${p.x},${p.y}`).join(' ');
-      lines.push(`    <polygon points="${pts}" fill="${room.color || '#E3F2FD'}" fill-opacity="0.4" stroke="none"/>`);
+      lines.push(`    <polygon points="${pts}" fill="${escapeXml(room.color || '#E3F2FD')}" fill-opacity="0.4" stroke="none"/>`);
 
       // Room label and area at centroid
       const centroid = Geometry.polygonCentroid(room.polygon);
@@ -281,13 +281,13 @@ const SvgExport = (() => {
         const ex = wall.x1 + dx * t1;
         const ey = wall.y1 + dy * t1;
         lines.push(`    <line x1="${sx}" y1="${sy}" x2="${ex}" y2="${ey}" ` +
-          `stroke="${wall.color}" stroke-width="${wall.thickness}" stroke-linecap="round" stroke-linejoin="round"/>`);
+          `stroke="${escapeXml(wall.color)}" stroke-width="${wall.thickness}" stroke-linecap="round" stroke-linejoin="round"/>`);
       }
 
       // Endpoint circles
       const epRadius = Math.max(3 * scale, wall.thickness / 2 + 1);
-      lines.push(`    <circle cx="${wall.x1}" cy="${wall.y1}" r="${epRadius}" fill="${wall.color}"/>`);
-      lines.push(`    <circle cx="${wall.x2}" cy="${wall.y2}" r="${epRadius}" fill="${wall.color}"/>`);
+      lines.push(`    <circle cx="${wall.x1}" cy="${wall.y1}" r="${epRadius}" fill="${escapeXml(wall.color)}"/>`);
+      lines.push(`    <circle cx="${wall.x2}" cy="${wall.y2}" r="${epRadius}" fill="${escapeXml(wall.color)}"/>`);
     }
 
     lines.push('  </g>');
@@ -334,19 +334,16 @@ const SvgExport = (() => {
       const arcStart = wallAngle + (dir > 0 ? -Math.PI / 2 : Math.PI / 2);
       const arcEnd = wallAngle + (dir > 0 ? 0 : Math.PI);
 
-      // SVG arc: compute start and end points on the arc
+      // SVG arc: compute start and end points directly from defined angles
       const r = door.width;
-      const startAngle = Math.min(arcStart, arcEnd);
-      const endAngle = Math.max(arcStart, arcEnd);
-      const arcX1 = hingeX + r * Math.cos(startAngle);
-      const arcY1 = hingeY + r * Math.sin(startAngle);
-      const arcX2 = hingeX + r * Math.cos(endAngle);
-      const arcY2 = hingeY + r * Math.sin(endAngle);
+      const arcX1 = hingeX + r * Math.cos(arcStart);
+      const arcY1 = hingeY + r * Math.sin(arcStart);
+      const arcX2 = hingeX + r * Math.cos(arcEnd);
+      const arcY2 = hingeY + r * Math.sin(arcEnd);
 
-      // Determine sweep direction: arc span is always pi/2 (quarter circle)
-      // Use sweep-flag=1 for CW arc in SVG (positive-Y-down)
-      const largeArc = 0; // quarter circle is never > 180 degrees
-      const sweepFlag = 1;
+      // Quarter circle is always < 180°. Sweep: CW for dir>0, CCW for dir<0.
+      const largeArc = 0;
+      const sweepFlag = dir > 0 ? 1 : 0;
 
       lines.push(`    <path d="M ${arcX1} ${arcY1} A ${r} ${r} 0 ${largeArc} ${sweepFlag} ${arcX2} ${arcY2}" ` +
         `fill="none" stroke="${color}" stroke-width="${strokeW}" stroke-linecap="round"/>`);
@@ -589,7 +586,7 @@ const SvgExport = (() => {
 
       // Label text
       lines.push(`    <text x="${label.x}" y="${label.y}" text-anchor="middle" dominant-baseline="central" ` +
-        `font-family="${font}" font-size="${fontSize}" fill="${label.color || '#333'}">${escapeXml(label.text)}</text>`);
+        `font-family="${font}" font-size="${fontSize}" fill="${escapeXml(label.color || '#333')}">${escapeXml(label.text)}</text>`);
     }
 
     lines.push('  </g>');

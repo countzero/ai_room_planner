@@ -173,7 +173,7 @@ const Model = (() => {
   function recalcRooms() {
     const detected = Geometry.detectRooms(walls);
     rooms = detected.map((r, i) => {
-      // Create a stable key from sorted wall ids
+      // Create a stable key from sorted wall IDs (entity .id values, not array indices)
       const key = r.wallIds.slice().sort((a, b) => a - b).join(',');
       const meta = roomMeta[key] || {
         color: ROOM_COLORS[i % ROOM_COLORS.length],
@@ -190,6 +190,13 @@ const Model = (() => {
         label: meta.label
       };
     });
+    // Clean up stale roomMeta entries for rooms that no longer exist
+    const activeKeys = new Set(rooms.map(r => r.key));
+    for (const key of Object.keys(roomMeta)) {
+      if (!activeKeys.has(key)) {
+        delete roomMeta[key];
+      }
+    }
   }
 
   /** Update room metadata */
@@ -229,7 +236,18 @@ const Model = (() => {
     windows = (state.windows || []).map(w => ({ ...w }));
     labels = (state.labels || []).map(l => ({ ...l }));
     roomMeta = state.roomMeta || {};
-    _nextId = state.nextId || 1;
+    _nextId = state.nextId ?? 1;
+    // Ensure _nextId exceeds all existing entity IDs to prevent collisions
+    const maxId = Math.max(
+      0,
+      ...walls.map(w => w.id),
+      ...doors.map(d => d.id),
+      ...windows.map(w => w.id),
+      ...labels.map(l => l.id)
+    );
+    if (_nextId <= maxId) {
+      _nextId = maxId + 1;
+    }
     recalcRooms();
   }
 

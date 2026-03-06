@@ -6,6 +6,67 @@ const Storage = (() => {
   const STORAGE_KEY = 'roomPlanner_state';
   let autoSaveTimer = null;
 
+  /**
+   * Validate that a parsed JSON object has the expected structure for a plan state.
+   * Throws on invalid data; returns normally on success.
+   */
+  function validateState(state) {
+    if (!state || typeof state !== 'object' || Array.isArray(state)) {
+      throw new Error('Invalid plan file: expected a JSON object');
+    }
+    // Validate top-level arrays
+    for (const key of ['walls', 'doors', 'windows', 'labels']) {
+      if (state[key] !== undefined && !Array.isArray(state[key])) {
+        throw new Error(`Invalid plan file: "${key}" must be an array`);
+      }
+    }
+    // Validate walls have required numeric fields
+    if (state.walls) {
+      for (let i = 0; i < state.walls.length; i++) {
+        const w = state.walls[i];
+        if (typeof w !== 'object' || w === null) {
+          throw new Error(`Invalid wall at index ${i}`);
+        }
+        for (const f of ['x1', 'y1', 'x2', 'y2']) {
+          if (typeof w[f] !== 'number' || !isFinite(w[f])) {
+            throw new Error(`Invalid wall at index ${i}: "${f}" must be a finite number`);
+          }
+        }
+      }
+    }
+    // Validate doors reference existing wall IDs and have required fields
+    if (state.doors) {
+      const wallIds = new Set((state.walls || []).map(w => w.id));
+      for (let i = 0; i < state.doors.length; i++) {
+        const d = state.doors[i];
+        if (typeof d !== 'object' || d === null) {
+          throw new Error(`Invalid door at index ${i}`);
+        }
+        if (!wallIds.has(d.wallId)) {
+          throw new Error(`Door at index ${i} references non-existent wall ${d.wallId}`);
+        }
+      }
+    }
+    // Validate windows reference existing wall IDs
+    if (state.windows) {
+      const wallIds = new Set((state.walls || []).map(w => w.id));
+      for (let i = 0; i < state.windows.length; i++) {
+        const w = state.windows[i];
+        if (typeof w !== 'object' || w === null) {
+          throw new Error(`Invalid window at index ${i}`);
+        }
+        if (!wallIds.has(w.wallId)) {
+          throw new Error(`Window at index ${i} references non-existent wall ${w.wallId}`);
+        }
+      }
+    }
+    // Validate roomMeta is an object (if present)
+    if (state.roomMeta !== undefined &&
+        (typeof state.roomMeta !== 'object' || Array.isArray(state.roomMeta) || state.roomMeta === null)) {
+      throw new Error('Invalid plan file: "roomMeta" must be an object');
+    }
+  }
+
   /** Save to localStorage */
   function save() {
     try {
@@ -22,6 +83,7 @@ const Storage = (() => {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
         const state = JSON.parse(raw);
+        validateState(state);
         Model.setState(state);
         return true;
       }
@@ -61,6 +123,7 @@ const Storage = (() => {
       reader.onload = (e) => {
         try {
           const state = JSON.parse(e.target.result);
+          validateState(state);
           History.push(); // save current state before importing
           Model.setState(state);
           save();

@@ -115,21 +115,24 @@ const Geometry = (() => {
   /**
    * Detect closed polygons from a set of wall segments.
    * Uses graph traversal to find cycles.
-   * Returns array of arrays of wall indices forming closed rooms.
+   * Returns array of { wallIds, polygon, area } where wallIds are wall .id values.
    */
   function detectRooms(walls) {
     if (walls.length < 3) return [];
 
-    // Build adjacency: map from point-key to list of { wallIdx, otherPoint }
+    // Build adjacency: map from point-key to list of { wallId, otherPoint }
     const EPS = 1; // 1 cm tolerance for point matching
     const pointKey = (x, y) => `${Math.round(x / EPS) * EPS},${Math.round(y / EPS) * EPS}`;
+
+    // Build id -> wall lookup for O(1) access
+    const wallById = new Map(walls.map(w => [w.id, w]));
 
     // Collect unique vertices and adjacency
     const adj = new Map();
 
-    function addEdge(key1, key2, wallIdx) {
+    function addEdge(key1, key2, wallId) {
       if (!adj.has(key1)) adj.set(key1, []);
-      adj.get(key1).push({ to: key2, wallIdx });
+      adj.get(key1).push({ to: key2, wallId });
     }
 
     for (let i = 0; i < walls.length; i++) {
@@ -137,17 +140,17 @@ const Geometry = (() => {
       const k1 = pointKey(w.x1, w.y1);
       const k2 = pointKey(w.x2, w.y2);
       if (k1 === k2) continue;
-      addEdge(k1, k2, i);
-      addEdge(k2, k1, i);
+      addEdge(k1, k2, w.id);
+      addEdge(k2, k1, w.id);
     }
 
     // Find minimal cycles using wall-following (left-hand rule)
     const rooms = [];
-    const usedEdgePairs = new Set(); // "wallIdx:fromKey" to avoid reusing directed edges
+    const usedEdgePairs = new Set(); // "wallId:fromKey" to avoid reusing directed edges
 
     for (const [startKey, edges] of adj) {
       for (const startEdge of edges) {
-        const dirKey = `${startEdge.wallIdx}:${startKey}`;
+        const dirKey = `${startEdge.wallId}:${startKey}`;
         if (usedEdgePairs.has(dirKey)) continue;
 
         // Follow left turns to find a minimal polygon
@@ -158,10 +161,10 @@ const Geometry = (() => {
         let found = false;
 
         for (let step = 0; step < walls.length + 1; step++) {
-          const dk = `${currentEdge.wallIdx}:${currentKey}`;
+          const dk = `${currentEdge.wallId}:${currentKey}`;
           if (usedEdgePairs.has(dk) && step > 0) break;
 
-          pathWalls.push(currentEdge.wallIdx);
+          pathWalls.push(currentEdge.wallId);
           const nextKey = currentEdge.to;
 
           if (nextKey === startKey && step >= 2) {
@@ -178,12 +181,11 @@ const Geometry = (() => {
           if (!nextEdges || nextEdges.length < 2) break;
 
           // Incoming direction
-          const w = walls[currentEdge.wallIdx];
-          const fromKey = currentKey;
+          const w = wallById.get(currentEdge.wallId);
           // Get coordinates from the wall
           const kStart = pointKey(w.x1, w.y1);
           let inX, inY;
-          if (fromKey === kStart || currentKey === kStart) {
+          if (currentKey === kStart) {
             // came from (x1,y1), so we arrived at (x2,y2)
             inX = w.x1 - w.x2;
             inY = w.y1 - w.y2;
@@ -197,8 +199,8 @@ const Geometry = (() => {
           let bestAngle = Infinity;
 
           for (const ne of nextEdges) {
-            if (ne.wallIdx === currentEdge.wallIdx) continue;
-            const nw = walls[ne.wallIdx];
+            if (ne.wallId === currentEdge.wallId) continue;
+            const nw = wallById.get(ne.wallId);
             const nk1 = pointKey(nw.x1, nw.y1);
             let outX, outY;
             if (nextKey === nk1) {
@@ -225,10 +227,9 @@ const Geometry = (() => {
         if (found && pathWalls.length >= 3) {
           // Mark directed edges as used
           let ck = startKey;
-          let ce = startEdge;
           for (let i = 0; i < pathWalls.length; i++) {
             usedEdgePairs.add(`${pathWalls[i]}:${ck}`);
-            const w = walls[pathWalls[i]];
+            const w = wallById.get(pathWalls[i]);
             const k1 = pointKey(w.x1, w.y1);
             ck = (ck === k1) ? pointKey(w.x2, w.y2) : k1;
           }
@@ -237,7 +238,7 @@ const Geometry = (() => {
           // The left-hand rule traces right-turning (smallest CW angle) paths,
           // producing CCW interior faces (negative area) in screen coords (Y-down).
           // Keep only negative area polygons (interior rooms), discard positive (outer boundary).
-          const polygon = getPolygonFromWalls(walls, pathWalls, pointKey, startKey);
+          const polygon = getPolygonFromWalls(wallById, pathWalls, pointKey, startKey);
           const area = signedPolygonArea(polygon);
           if (area < 0) {
             rooms.push({
@@ -253,12 +254,12 @@ const Geometry = (() => {
     return rooms;
   }
 
-  /** Get ordered polygon vertices from a sequence of wall indices */
-  function getPolygonFromWalls(walls, wallIds, pointKeyFn, startKey) {
+  /** Get ordered polygon vertices from a sequence of wall IDs */
+  function getPolygonFromWalls(wallById, wallIds, pointKeyFn, startKey) {
     const pts = [];
     let currentKey = startKey;
-    for (const wi of wallIds) {
-      const w = walls[wi];
+    for (const wid of wallIds) {
+      const w = wallById.get(wid);
       const k1 = pointKeyFn(w.x1, w.y1);
       if (currentKey === k1) {
         pts.push({ x: w.x1, y: w.y1 });

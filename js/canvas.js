@@ -303,11 +303,65 @@ const CanvasRenderer = (() => {
     ctx.restore();
   }
 
+  /**
+   * Compute wall segments with gaps cut for doors and windows.
+   * Returns array of [t0, t1] parametric ranges where the wall should be drawn.
+   */
+  function computeWallSegments(wall) {
+    const dx = wall.x2 - wall.x1;
+    const dy = wall.y2 - wall.y1;
+    const wallLen = Math.sqrt(dx * dx + dy * dy);
+    if (wallLen === 0) return [[0, 1]];
+
+    const gaps = [];
+
+    for (const door of Model.doors) {
+      if (door.wallId !== wall.id) continue;
+      const halfParam = (door.width / 2) / wallLen;
+      gaps.push([door.position - halfParam, door.position + halfParam]);
+    }
+
+    for (const win of Model.windows) {
+      if (win.wallId !== wall.id) continue;
+      const halfParam = (win.width / 2) / wallLen;
+      gaps.push([win.position - halfParam, win.position + halfParam]);
+    }
+
+    if (gaps.length === 0) return [[0, 1]];
+
+    // Sort gaps by start and merge overlapping ones
+    gaps.sort((a, b) => a[0] - b[0]);
+    const merged = [gaps[0]];
+    for (let i = 1; i < gaps.length; i++) {
+      const last = merged[merged.length - 1];
+      if (gaps[i][0] <= last[1]) {
+        last[1] = Math.max(last[1], gaps[i][1]);
+      } else {
+        merged.push(gaps[i]);
+      }
+    }
+
+    // Compute complementary segments
+    const segments = [];
+    let cursor = 0;
+    for (const [gStart, gEnd] of merged) {
+      const s = Math.max(0, gStart);
+      const e = Math.min(1, gEnd);
+      if (cursor < s) {
+        segments.push([cursor, s]);
+      }
+      cursor = e;
+    }
+    if (cursor < 1) {
+      segments.push([cursor, 1]);
+    }
+
+    return segments;
+  }
+
   function drawWalls() {
     ctx.save();
     for (const wall of Model.walls) {
-      const s1 = worldToScreen(wall.x1, wall.y1);
-      const s2 = worldToScreen(wall.x2, wall.y2);
       const screenThickness = Math.max(2, worldToScreenDist(wall.thickness));
 
       const isSelected = selection && selection.type === 'wall' && selection.id === wall.id;
@@ -318,12 +372,22 @@ const CanvasRenderer = (() => {
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
 
+      // Draw wall segments with gaps for doors/windows
+      const segments = computeWallSegments(wall);
+      const dx = wall.x2 - wall.x1;
+      const dy = wall.y2 - wall.y1;
       ctx.beginPath();
-      ctx.moveTo(s1.x, s1.y);
-      ctx.lineTo(s2.x, s2.y);
+      for (const [t0, t1] of segments) {
+        const ss = worldToScreen(wall.x1 + dx * t0, wall.y1 + dy * t0);
+        const se = worldToScreen(wall.x1 + dx * t1, wall.y1 + dy * t1);
+        ctx.moveTo(ss.x, ss.y);
+        ctx.lineTo(se.x, se.y);
+      }
       ctx.stroke();
 
       // Draw endpoints
+      const s1 = worldToScreen(wall.x1, wall.y1);
+      const s2 = worldToScreen(wall.x2, wall.y2);
       const epRadius = Math.max(3, screenThickness / 2 + 1);
       ctx.fillStyle = isSelected ? colors.wallEndpointSel : wall.color;
       ctx.beginPath();
@@ -360,19 +424,6 @@ const CanvasRenderer = (() => {
 
       const isSelected = selection && selection.type === 'door' && selection.id === door.id;
 
-      // Draw gap (clear the wall behind the door)
-      const p1 = worldToScreen(cx - ux * hw, cy - uy * hw);
-      const p2 = worldToScreen(cx + ux * hw, cy + uy * hw);
-      const screenThickness = Math.max(2, worldToScreenDist(wall.thickness)) + 4;
-
-      ctx.strokeStyle = colors.canvasBg; // background color to clear wall
-      ctx.lineWidth = screenThickness;
-      ctx.lineCap = 'butt';
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.stroke();
-
       // Draw door lines and arc
       const sCenter = worldToScreen(cx, cy);
       const screenWidth = worldToScreenDist(door.width);
@@ -397,13 +448,11 @@ const CanvasRenderer = (() => {
       ctx.lineTo(sPanelEnd.x, sPanelEnd.y);
       ctx.stroke();
 
-      // Arc
+      // Arc — use anticlockwise param to handle all wall orientations correctly
       const arcStart = wallAngle + (dir > 0 ? -Math.PI / 2 : Math.PI / 2);
       const arcEnd = wallAngle + (dir > 0 ? 0 : Math.PI);
       ctx.beginPath();
-      ctx.arc(sHinge.x, sHinge.y, screenWidth, 
-        dir > 0 ? Math.min(arcStart, arcEnd) : Math.min(arcStart, arcEnd),
-        dir > 0 ? Math.max(arcStart, arcEnd) : Math.max(arcStart, arcEnd));
+      ctx.arc(sHinge.x, sHinge.y, screenWidth, arcStart, arcEnd, dir < 0);
       ctx.stroke();
 
       // Small squares at door posts
@@ -436,19 +485,6 @@ const CanvasRenderer = (() => {
       const ny = ux;
 
       const isSelected = selection && selection.type === 'window' && selection.id === win.id;
-
-      // Clear wall behind window
-      const p1 = worldToScreen(cx - ux * hw, cy - uy * hw);
-      const p2 = worldToScreen(cx + ux * hw, cy + uy * hw);
-      const screenThickness = Math.max(2, worldToScreenDist(wall.thickness)) + 4;
-
-      ctx.strokeStyle = colors.canvasBg;
-      ctx.lineWidth = screenThickness;
-      ctx.lineCap = 'butt';
-      ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
-      ctx.stroke();
 
       // Draw window: two parallel lines with a line in middle
       const halfThick = wall.thickness / 2;

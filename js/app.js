@@ -325,7 +325,7 @@
           </div>
           <div class="prop-field">
             <label>Color</label>
-            <input type="color" id="prop-wall-color" value="${wall.color}">
+            <input type="color" id="prop-wall-color" value="${escapeHtml(wall.color)}">
           </div>
           <div class="prop-field">
             <label></label>
@@ -391,7 +391,7 @@
           </div>
           <div class="prop-field">
             <label>Color</label>
-            <input type="color" id="prop-label-color" value="${label.color}">
+            <input type="color" id="prop-label-color" value="${escapeHtml(label.color)}">
           </div>
           <div class="prop-field">
             <label></label>
@@ -413,7 +413,7 @@
           </div>
           <div class="prop-field">
             <label>Color</label>
-            <input type="color" id="prop-room-color" value="${room.color}">
+            <input type="color" id="prop-room-color" value="${escapeHtml(room.color)}">
           </div>
         `;
         break;
@@ -439,14 +439,14 @@
 
     switch (sel.type) {
       case 'wall': {
-        bindInput('prop-thickness', (v) => {
-          History.push();
-          Model.updateWall(sel.id, { thickness: parseInt(v) });
+        bindInput('prop-thickness', (v, commit) => {
+          if (commit) History.push();
+          Model.updateWall(sel.id, { thickness: safeInt(v, Model.getWall(sel.id)?.thickness ?? 20) });
           Storage.autoSave();
           requestRender();
         });
-        bindInput('prop-wall-color', (v) => {
-          History.push();
+        bindInput('prop-wall-color', (v, commit) => {
+          if (commit) History.push();
           Model.updateWall(sel.id, { color: v });
           Storage.autoSave();
           requestRender();
@@ -454,14 +454,14 @@
         break;
       }
       case 'door': {
-        bindInput('prop-door-width', (v) => {
-          History.push();
-          Model.updateDoor(sel.id, { width: parseInt(v) });
+        bindInput('prop-door-width', (v, commit) => {
+          if (commit) History.push();
+          Model.updateDoor(sel.id, { width: safeInt(v, Model.getDoor(sel.id)?.width ?? 80) });
           Storage.autoSave();
           requestRender();
         });
-        bindInput('prop-door-direction', (v) => {
-          History.push();
+        bindInput('prop-door-direction', (v, commit) => {
+          if (commit) History.push();
           Model.updateDoor(sel.id, { openDirection: v });
           Storage.autoSave();
           requestRender();
@@ -469,29 +469,29 @@
         break;
       }
       case 'window': {
-        bindInput('prop-win-width', (v) => {
-          History.push();
-          Model.updateWindow(sel.id, { width: parseInt(v) });
+        bindInput('prop-win-width', (v, commit) => {
+          if (commit) History.push();
+          Model.updateWindow(sel.id, { width: safeInt(v, Model.getWindow(sel.id)?.width ?? 100) });
           Storage.autoSave();
           requestRender();
         });
         break;
       }
       case 'label': {
-        bindInput('prop-label-text', (v) => {
-          History.push();
+        bindInput('prop-label-text', (v, commit) => {
+          if (commit) History.push();
           Model.updateLabel(sel.id, { text: v });
           Storage.autoSave();
           requestRender();
         });
-        bindInput('prop-label-size', (v) => {
-          History.push();
-          Model.updateLabel(sel.id, { fontSize: parseInt(v) });
+        bindInput('prop-label-size', (v, commit) => {
+          if (commit) History.push();
+          Model.updateLabel(sel.id, { fontSize: safeInt(v, Model.getLabel(sel.id)?.fontSize ?? 14) });
           Storage.autoSave();
           requestRender();
         });
-        bindInput('prop-label-color', (v) => {
-          History.push();
+        bindInput('prop-label-color', (v, commit) => {
+          if (commit) History.push();
           Model.updateLabel(sel.id, { color: v });
           Storage.autoSave();
           requestRender();
@@ -499,15 +499,15 @@
         break;
       }
       case 'room': {
-        bindInput('prop-room-label', (v) => {
-          History.push();
+        bindInput('prop-room-label', (v, commit) => {
+          if (commit) History.push();
           Model.updateRoomMeta(sel.key, { label: v });
           Storage.autoSave();
           requestRender();
           updateRoomsList();
         });
-        bindInput('prop-room-color', (v) => {
-          History.push();
+        bindInput('prop-room-color', (v, commit) => {
+          if (commit) History.push();
           Model.updateRoomMeta(sel.key, { color: v });
           Storage.autoSave();
           requestRender();
@@ -521,10 +521,28 @@
   function bindInput(id, onChange) {
     const el = document.getElementById(id);
     if (!el) return;
-    const eventType = el.type === 'color' ? 'input' : 'change';
-    el.addEventListener(eventType, () => onChange(el.value));
-    if (el.type === 'text') {
-      el.addEventListener('input', () => onChange(el.value));
+    if (el.type === 'color') {
+      // Live preview on 'input' (no history push), commit on 'change'.
+      // Push history snapshot on the FIRST input event (before the model is modified),
+      // so that undo restores the state prior to the entire color drag.
+      let dirty = false;
+      el.addEventListener('input', () => {
+        if (!dirty) {
+          History.push(); // snapshot pre-edit state once
+          dirty = true;
+        }
+        onChange(el.value, false);
+      });
+      el.addEventListener('change', () => {
+        if (dirty) {
+          // Model already updated via input events; just save and reset
+          Storage.autoSave();
+          dirty = false;
+        }
+      });
+    } else {
+      // For text, number, select: only commit on 'change' (blur/Enter)
+      el.addEventListener('change', () => onChange(el.value, true));
     }
   }
 
@@ -545,8 +563,8 @@
       const isSelected = sel && sel.type === 'room' && sel.key === room.key;
       const name = room.label || `Room ${i + 1}`;
       html += `
-        <div class="room-item${isSelected ? ' selected' : ''}" data-room-key="${room.key}">
-          <div class="room-color-swatch" style="background: ${room.color}"></div>
+        <div class="room-item${isSelected ? ' selected' : ''}" data-room-key="${escapeHtml(room.key)}">
+          <div class="room-color-swatch" style="background: ${escapeHtml(room.color)}"></div>
           <span class="room-name">${escapeHtml(name)}</span>
           <span class="room-area">${areaSqM.toFixed(1)} m&sup2;</span>
         </div>
@@ -612,6 +630,12 @@
     const div = document.createElement('div');
     div.textContent = text;
     return div.innerHTML;
+  }
+
+  /** Parse an integer, returning fallback if the result is NaN */
+  function safeInt(value, fallback) {
+    const n = parseInt(value, 10);
+    return isNaN(n) ? fallback : n;
   }
 
   // ===== Initial Render =====
