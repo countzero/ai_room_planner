@@ -22,11 +22,17 @@ A browser-based 2D floor plan editor built with vanilla JavaScript and HTML5 Can
 - **PNG export** -- download the current canvas view as an image
 - **SVG export** -- download a resolution-independent vector SVG of the full plan, suitable for printing or editing in vector tools
 - **Properties panel** -- context-sensitive editing for walls (thickness, color), doors (width, swing), windows (width), labels (text, size, color), and rooms (name, color)
+- **Dark / light theme** -- toggle between dark and light mode; automatically detects OS preference and persists your choice in localStorage
+- **Overall dimension annotations** -- bounding-box width and height dimension lines are drawn around the entire plan on both canvas and SVG export
+- **Cursor position display** -- real-time coordinates (in meters) shown in the toolbar as you move the mouse
+- **Total room area** -- rooms panel shows the combined area of all detected rooms
+- **High-DPI rendering** -- canvas scales with `devicePixelRatio` for sharp output on Retina/HiDPI displays
+- **Import validation** -- imported JSON files are validated for structure and referential integrity before loading
 - **Toast notifications** -- non-intrusive feedback messages for save, load, export, and other actions
 
 ## Quick Start
 
-**[Try the live demo](https://sandbox.finnkumkar.de/ai/room_planner)** -- no download needed.
+**[Try the live demo](https://countzero.github.io/ai_room_planner/)** -- no download needed.
 
 ### Run locally
 
@@ -123,18 +129,21 @@ Rooms are detected automatically whenever walls form a closed polygon. Each room
 
 ```
 ai_room_planner/
-  index.html          Main HTML file (entry point)
+  index.html             Main HTML file (entry point)
+  LICENSE.md             MIT License
+  CHANGELOG.md           Version history and release notes
+  CLAUDE.md              Guidance for Claude Code AI assistant
   css/
-    style.css          All styles (toolbar, sidebar, canvas, overlays)
+    style.css            All styles (toolbar, sidebar, canvas, overlays, dark theme)
   js/
-    geometry.js        Pure math utilities (distance, snapping, polygon detection, segment normals/midpoints/lengths)
-    model.js           Central data store (walls, doors, windows, labels, rooms)
-    history.js         Undo/redo via JSON state snapshots
-    canvas.js          Rendering engine (grid, zoom/pan, drawing, dimension annotations, fit-to-view)
-    tools.js           Tool state machine (pointer interaction, all tool modes)
-    storage.js         localStorage auto-save, JSON/PNG export/import
-    svg-export.js      Resolution-independent SVG export of the full plan
-    app.js             Entry point -- wires DOM events, toolbar, properties panel, toast notifications
+    geometry.js          Pure math utilities (distance, snapping, polygon detection, segment normals/midpoints/lengths)
+    model.js             Central data store (walls, doors, windows, labels, rooms)
+    history.js           Undo/redo via JSON state snapshots
+    canvas.js            Rendering engine (grid, zoom/pan, drawing, dimension annotations, fit-to-view)
+    tools.js             Tool state machine (pointer interaction, all tool modes)
+    storage.js           localStorage auto-save, JSON/PNG export/import, import validation
+    svg-export.js        Resolution-independent SVG export of the full plan
+    app.js               Entry point -- wires DOM events, toolbar, properties panel, toast notifications
 ```
 
 ## Architecture
@@ -152,7 +161,7 @@ Geometry -> Model -> History -> CanvasRenderer -> Tools -> Storage -> SvgExport 
 - **Wall-attached elements** -- doors and windows reference a `wallId` and store a `position` value (0--1 parametric along the wall). Removing a wall cascades deletion to its doors and windows.
 - **Room detection** -- rooms are auto-detected from closed wall polygons using graph traversal with a left-hand (clockwise) rule. Room identity is keyed by a sorted wall-ID string (e.g., `"1,3,5"`). Room metadata (color, label) is stored separately in `roomMeta` so it survives re-detection.
 - **State serialization** -- `Model.getState()` and `Model.setState()` produce and consume plain objects. This is used by History (undo/redo snapshots), Storage (localStorage + JSON export), and import.
-- **Pointer events** -- the app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with `setPointerCapture()` for reliable drag behavior across all input types (mouse, touch, pen).
+- **Pointer events** -- the app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with window-level listeners for reliable drag behavior across all input types (mouse, touch, pen).
 - **No module system** -- all modules communicate through globals. Load order in `index.html` matters.
 
 ## Browser Compatibility
@@ -164,6 +173,10 @@ Requires a modern browser with support for:
 - ES6+ (arrow functions, `const`/`let`, template literals, `Map`, `Set`)
 
 Tested in Chrome, Firefox, Edge, and Safari.
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for version history and release notes.
 
 ## License
 

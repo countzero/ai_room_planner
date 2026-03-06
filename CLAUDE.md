@@ -30,5 +30,5 @@ The app uses the **revealing module pattern** — each JS file defines a global 
 - **Doors/windows are wall-attached**: They reference a `wallId` and store a `position` (0–1 parametric along the wall). Removing a wall cascades to its doors/windows.
 - **Room detection**: Rooms are auto-detected from closed wall polygons using graph traversal (left-hand rule). Room identity is keyed by sorted wall-ID string (e.g., `"1,3,5"`). Room metadata (color, label) is stored separately in `roomMeta`.
 - **State serialization**: `Model.getState()` / `Model.setState()` produce/consume plain objects. Used by History, Storage, and JSON export.
-- **Pointer events**: The app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with `setPointerCapture()` for reliable drag behavior across all input types.
+- **Pointer events**: The app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with window-level listeners for reliable drag behavior across all input types.
 - **No module system**: All modules communicate through globals. Load order in `index.html` matters.
