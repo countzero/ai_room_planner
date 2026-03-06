@@ -9,19 +9,24 @@ A browser-based 2D floor plan editor built with vanilla JavaScript and HTML5 Can
 - **Window placement** -- place windows on any wall with configurable width
 - **Text labels** -- add annotations anywhere on the plan; double-click to edit in place
 - **Automatic room detection** -- closed wall polygons are detected as rooms with calculated area (m^2), customizable name and fill color
+- **Wall dimension annotations** -- wall lengths are automatically displayed alongside every wall with tick marks and dashed dimension lines
 - **Smart snapping** -- grid snap (10 cm), endpoint snap to existing wall corners, angle snap (15 degree increments)
+- **Grab / Pan tool** -- dedicated pan tool (H) for click-and-drag panning, in addition to middle-click and Space+drag
+- **Fit to View** -- automatically zoom and center to fit all plan content (F key or toolbar button)
 - **Zoom and pan** -- scroll to zoom (0.1x--5x), middle-click or Space+drag to pan
 - **Undo/redo** -- up to 100 history states
 - **Auto-save** -- plan is saved to localStorage automatically (500 ms debounce)
 - **JSON import/export** -- save and load full plan state as `.json` files
 - **PNG export** -- download the current canvas view as an image
+- **SVG export** -- download a resolution-independent vector SVG of the full plan, suitable for printing or editing in vector tools
 - **Properties panel** -- context-sensitive editing for walls (thickness, color), doors (width, swing), windows (width), labels (text, size, color), and rooms (name, color)
+- **Toast notifications** -- non-intrusive feedback messages for save, load, export, and other actions
 
 ## Quick Start
 
 ```bash
 git clone <repository-url>
-cd ai_room_planer
+cd ai_room_planner
 ```
 
 Open `index.html` in any modern browser. That's it -- no install, no build step, no server required.
@@ -73,7 +78,8 @@ Rooms are detected automatically whenever walls form a closed polygon. Each room
 | Action | Input |
 |--------|-------|
 | Zoom in/out | Scroll wheel |
-| Pan | Middle-click + drag, or Space + left-click + drag |
+| Pan | Middle-click + drag, Space + left-click + drag, or Grab tool (**H**) |
+| Fit to View | Press **F** or click the fit-to-view button in the toolbar |
 | Toggle grid snapping | Press **G** |
 
 ## Keyboard Shortcuts
@@ -81,10 +87,12 @@ Rooms are detected automatically whenever walls form a closed polygon. Each room
 | Key | Action |
 |-----|--------|
 | `V` | Select tool |
+| `H` | Grab / Pan tool |
 | `W` | Wall tool |
 | `D` | Door tool |
 | `N` | Window tool |
 | `L` | Label tool |
+| `F` | Fit to View |
 | `G` | Toggle grid snapping |
 | `Escape` | Cancel current action / deselect |
 | `Delete` / `Backspace` | Delete selected element |
@@ -103,23 +111,25 @@ Rooms are detected automatically whenever walls form a closed polygon. Each room
 | **Export JSON** | Click **Save** or press `Ctrl+S` to download a `room-plan.json` file containing the full plan state. |
 | **Import JSON** | Click **Load** and select a previously exported `.json` file. |
 | **Export PNG** | Click **Export** to download a `room-plan.png` screenshot of the current canvas view. |
+| **Export SVG** | Click **SVG** to download a `room-plan.svg` vector file of the full plan, resolution-independent and suitable for printing or editing in Inkscape/Illustrator. |
 | **Clear** | Click **Clear** to reset the entire plan (with confirmation). This also clears localStorage and history. |
 
 ## Project Structure
 
 ```
-ai_room_planer/
+ai_room_planner/
   index.html          Main HTML file (entry point)
   css/
     style.css          All styles (toolbar, sidebar, canvas, overlays)
   js/
-    geometry.js        Pure math utilities (distance, snapping, polygon detection)
+    geometry.js        Pure math utilities (distance, snapping, polygon detection, segment normals/midpoints/lengths)
     model.js           Central data store (walls, doors, windows, labels, rooms)
     history.js         Undo/redo via JSON state snapshots
-    canvas.js          Rendering engine (grid, zoom/pan, drawing)
-    tools.js           Tool state machine (mouse/keyboard interaction)
+    canvas.js          Rendering engine (grid, zoom/pan, drawing, dimension annotations, fit-to-view)
+    tools.js           Tool state machine (pointer interaction, all tool modes)
     storage.js         localStorage auto-save, JSON/PNG export/import
-    app.js             Entry point -- wires DOM events, toolbar, properties panel
+    svg-export.js      Resolution-independent SVG export of the full plan
+    app.js             Entry point -- wires DOM events, toolbar, properties panel, toast notifications
 ```
 
 ## Architecture
@@ -127,7 +137,7 @@ ai_room_planer/
 The app uses the **revealing module pattern**. Each JavaScript file defines a global singleton via an IIFE that returns a public API. Scripts are loaded in dependency order via `<script>` tags in `index.html`:
 
 ```
-Geometry -> Model -> History -> CanvasRenderer -> Tools -> Storage -> app.js
+Geometry -> Model -> History -> CanvasRenderer -> Tools -> Storage -> SvgExport -> app.js
 ```
 
 ### Key design decisions
@@ -137,6 +147,7 @@ Geometry -> Model -> History -> CanvasRenderer -> Tools -> Storage -> app.js
 - **Wall-attached elements** -- doors and windows reference a `wallId` and store a `position` value (0--1 parametric along the wall). Removing a wall cascades deletion to its doors and windows.
 - **Room detection** -- rooms are auto-detected from closed wall polygons using graph traversal with a left-hand (clockwise) rule. Room identity is keyed by a sorted wall-ID string (e.g., `"1,3,5"`). Room metadata (color, label) is stored separately in `roomMeta` so it survives re-detection.
 - **State serialization** -- `Model.getState()` and `Model.setState()` produce and consume plain objects. This is used by History (undo/redo snapshots), Storage (localStorage + JSON export), and import.
+- **Pointer events** -- the app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with `setPointerCapture()` for reliable drag behavior across all input types (mouse, touch, pen).
 - **No module system** -- all modules communicate through globals. Load order in `index.html` matters.
 
 ## Browser Compatibility
@@ -153,7 +164,7 @@ Tested in Chrome, Firefox, Edge, and Safari.
 
 MIT License
 
-Copyright (c) 2025
+Copyright (c) 2025-2026
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

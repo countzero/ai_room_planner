@@ -73,12 +73,16 @@ const Tools = (() => {
     const c = container();
     if (!c) return;
     c.className = '';
+    const canvas = CanvasRenderer.canvas;
     if (isPanning) {
       c.classList.add('cursor-grabbing');
+      if (canvas) canvas.style.cursor = 'grabbing';
     } else if (spaceHeld) {
       c.classList.add('cursor-grab');
+      if (canvas) canvas.style.cursor = 'grab';
     } else {
       c.classList.add('cursor-' + activeTool);
+      if (canvas) canvas.style.cursor = '';
     }
   }
 
@@ -140,10 +144,9 @@ const Tools = (() => {
       updateCursor();
       e.preventDefault();
       e.stopPropagation();
-      // Capture pointer so we receive move/up events even outside canvas
-      if (e.target.setPointerCapture && e.pointerId !== undefined) {
-        e.target.setPointerCapture(e.pointerId);
-      }
+      // NOTE: We intentionally do NOT use setPointerCapture here because
+      // Chromium won't visually update the cursor while a pointer is captured.
+      // Window-level pointermove/pointerup listeners handle events outside canvas.
       return;
     }
 
@@ -161,9 +164,7 @@ const Tools = (() => {
         panStartY = e.clientY;
         updateCursor();
         e.preventDefault();
-        if (e.target.setPointerCapture && e.pointerId !== undefined) {
-          e.target.setPointerCapture(e.pointerId);
-        }
+        // NOTE: No setPointerCapture — see comment above about Chromium cursor bug.
         break;
       case 'wall':
         handleWallClick(world, e);
@@ -222,10 +223,6 @@ const Tools = (() => {
   function onMouseUp(e) {
     if (isPanning) {
       isPanning = false;
-      // Release pointer capture if it was set
-      if (e.target.releasePointerCapture && e.pointerId !== undefined) {
-        try { e.target.releasePointerCapture(e.pointerId); } catch (_) {}
-      }
       updateCursor();
       return;
     }

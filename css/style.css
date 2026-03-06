@@ -364,15 +364,28 @@ html, body {
   height: 100%;
 }
 
-/* Cursor modes */
-#canvas-container.cursor-select { cursor: default; }
-#canvas-container.cursor-wall { cursor: crosshair; }
-#canvas-container.cursor-door { cursor: pointer; }
-#canvas-container.cursor-window { cursor: pointer; }
-#canvas-container.cursor-label { cursor: text; }
-#canvas-container.cursor-grab { cursor: grab; }
-#canvas-container.cursor-grabbing { cursor: grabbing; }
-#canvas-container.cursor-move { cursor: move; }
+/* Cursor modes — applied to container AND canvas child so pointer-capture
+   on either element still shows the correct cursor. */
+#canvas-container.cursor-select,
+#canvas-container.cursor-select #planner-canvas { cursor: default; }
+#canvas-container.cursor-wall,
+#canvas-container.cursor-wall #planner-canvas { cursor: crosshair; }
+#canvas-container.cursor-door,
+#canvas-container.cursor-door #planner-canvas { cursor: pointer; }
+#canvas-container.cursor-window,
+#canvas-container.cursor-window #planner-canvas { cursor: pointer; }
+#canvas-container.cursor-label,
+#canvas-container.cursor-label #planner-canvas { cursor: text; }
+#canvas-container.cursor-grab,
+#canvas-container.cursor-grab #planner-canvas { cursor: grab; }
+#canvas-container.cursor-grabbing,
+#canvas-container.cursor-grabbing #planner-canvas { cursor: grabbing; }
+#canvas-container.cursor-move,
+#canvas-container.cursor-move #planner-canvas { cursor: move; }
+
+/* Grab → grabbing via :active pseudo-class (Chromium respects this during press) */
+#canvas-container.cursor-grab:active,
+#canvas-container.cursor-grab:active #planner-canvas { cursor: grabbing; }
 
 /* ===== Label Input Overlay ===== */
 .label-input-overlay {

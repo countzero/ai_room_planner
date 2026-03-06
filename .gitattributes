@@ -1,0 +1,6 @@
+# This overrides the core.autocrlf setting - http://git-scm.com/docs/gitattributes
+# Set default behaviour, in case users don't have core.autocrlf set.
+* text=auto eol=lf
+
+# Do not render generated files in GitHub pull request contexts.
+.sublime_text/ linguist-generated=true

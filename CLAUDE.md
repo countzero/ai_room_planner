@@ -14,13 +14,14 @@ Open `index.html` directly in a browser. No server, build step, or package manag
 
 The app uses the **revealing module pattern** — each JS file defines a global singleton (IIFE returning a public API). Scripts are loaded in dependency order via `<script>` tags in `index.html`:
 
-1. **`geometry.js`** → `Geometry` — Pure math utilities (distance, snapping, polygon detection). All coordinates are in **centimeters** internally.
+1. **`geometry.js`** → `Geometry` — Pure math utilities (distance, snapping, polygon detection, segment normals/midpoints/lengths). All coordinates are in **centimeters** internally.
 2. **`model.js`** → `Model` — Central data store for walls, doors, windows, labels, and auto-detected rooms. Rooms are computed via `Geometry.detectRooms()` whenever walls change.
 3. **`history.js`** → `History` — Undo/redo via JSON-serialized state snapshots of the full Model.
-4. **`canvas.js`** → `CanvasRenderer` — Rendering engine handling grid, zoom/pan, and drawing all elements. Manages screen↔world coordinate transforms.
-5. **`tools.js`** → `Tools` — Tool state machine (select, wall, door, window, label). Handles all mouse/keyboard interaction, snapping logic, and drag operations.
+4. **`canvas.js`** → `CanvasRenderer` — Rendering engine handling grid, zoom/pan, drawing all elements, wall dimension annotations, and fit-to-view. Manages screen↔world coordinate transforms.
+5. **`tools.js`** → `Tools` — Tool state machine (select, grab, wall, door, window, label). Handles all pointer interaction (using Pointer Events with pointer capture), snapping logic, and drag operations.
 6. **`storage.js`** → `Storage` — localStorage auto-save (debounced 500ms), JSON import/export, PNG export.
-7. **`app.js`** — Entry point. Wires DOM events to Tools, binds toolbar buttons, manages the properties panel and rooms list UI.
+7. **`svg-export.js`** → `SvgExport` — Resolution-independent SVG export. Generates a full SVG from plan data in world coordinates (cm) with viewBox mapping, reproducing all canvas layers (grid, rooms, walls with door/window gaps, doors with swing arcs, windows, dimension lines, labels).
+8. **`app.js`** — Entry point. Wires DOM events to Tools, binds toolbar buttons, manages the properties panel, rooms list UI, and toast notifications.
 
 ## Key Conventions
 
@@ -29,4 +30,5 @@ The app uses the **revealing module pattern** — each JS file defines a global 
 - **Doors/windows are wall-attached**: They reference a `wallId` and store a `position` (0–1 parametric along the wall). Removing a wall cascades to its doors/windows.
 - **Room detection**: Rooms are auto-detected from closed wall polygons using graph traversal (left-hand rule). Room identity is keyed by sorted wall-ID string (e.g., `"1,3,5"`). Room metadata (color, label) is stored separately in `roomMeta`.
 - **State serialization**: `Model.getState()` / `Model.setState()` produce/consume plain objects. Used by History, Storage, and JSON export.
+- **Pointer events**: The app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with `setPointerCapture()` for reliable drag behavior across all input types.
 - **No module system**: All modules communicate through globals. Load order in `index.html` matters.

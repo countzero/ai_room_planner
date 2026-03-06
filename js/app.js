@@ -43,7 +43,12 @@
     if (e.button === 1) e.preventDefault();
   });
 
-  // Window-level events for key and pointer up (handle releasing outside canvas)
+  // Window-level events for key, pointer move (pan outside canvas) and pointer up.
+  // The pointermove handler only forwards events that originate outside the canvas
+  // container, so that normal in-canvas moves aren't processed twice.
+  window.addEventListener('pointermove', (e) => {
+    if (!canvasContainer.contains(e.target)) Tools.onMouseMove(e);
+  });
   window.addEventListener('pointerup', (e) => Tools.onMouseUp(e));
   window.addEventListener('keydown', (e) => handleKeyDown(e));
   window.addEventListener('keyup', (e) => Tools.onKeyUp(e));
@@ -127,6 +132,11 @@
   document.getElementById('btn-export-png').addEventListener('click', () => {
     Storage.exportPNG();
     showToast('Plan exported as PNG');
+  });
+
+  document.getElementById('btn-export-svg').addEventListener('click', () => {
+    SvgExport.exportSVG();
+    showToast('Plan exported as SVG');
   });
 
   document.getElementById('btn-fit-view').addEventListener('click', () => {

@@ -1,0 +1,17 @@
+#
+# .gitignore
+#
+
+#
+# GENERAL
+#
+
+# OpenCode tooling defect creates a 'nul' file on Windows.
+# TODO: Remove when https://github.com/anomalyco/opencode/pull/13406 is merged
+nul
+
+# Ignore Sublime Text files.
+*.sublime-workspace
+
+# Ignore local Claude Code settings.
+.claude/settings.local.json
