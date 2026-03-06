@@ -213,6 +213,28 @@
   // Theme toggle
   document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);
 
+  // Collapsible shortcuts panel
+  const SHORTCUTS_KEY = 'roomPlanner_shortcutsCollapsed';
+  const shortcutsToggle = document.getElementById('shortcuts-toggle');
+  const shortcutsList = shortcutsToggle.nextElementSibling;
+
+  function setShortcutsCollapsed(collapsed) {
+    shortcutsToggle.classList.toggle('collapsed', collapsed);
+    shortcutsList.classList.toggle('collapsed', collapsed);
+    localStorage.setItem(SHORTCUTS_KEY, collapsed ? '1' : '0');
+  }
+
+  // Restore state: default to collapsed if no saved preference
+  {
+    const saved = localStorage.getItem(SHORTCUTS_KEY);
+    const collapsed = saved === null ? true : saved === '1';
+    setShortcutsCollapsed(collapsed);
+  }
+
+  shortcutsToggle.addEventListener('click', () => {
+    setShortcutsCollapsed(!shortcutsToggle.classList.contains('collapsed'));
+  });
+
   // History change callback
   History.onChange(() => {
     updateRoomsList();

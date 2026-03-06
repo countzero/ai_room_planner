@@ -413,6 +413,32 @@ html, body {
   color: var(--text);
 }
 
+/* Collapsible panels */
+.panel-title.collapsible {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+}
+
+.panel-title.collapsible:hover {
+  color: var(--text);
+}
+
+.collapse-icon {
+  transition: transform 0.2s ease;
+  flex-shrink: 0;
+}
+
+.panel-title.collapsible.collapsed .collapse-icon {
+  transform: rotate(-90deg);
+}
+
+.shortcuts-list.collapsed {
+  display: none;
+}
+
 /* Shortcuts */
 .shortcuts-list {
   padding: 4px 14px 12px;
