@@ -14,7 +14,7 @@ const Model = (() => {
   let rooms = [];  // auto-detected, not saved directly
   let roomMeta = {}; // { roomKey: { color, label } } - saved
 
-  // Default colors for rooms
+  // Default colors for rooms (light theme)
   const ROOM_COLORS = [
     '#E3F2FD', // light blue
     '#E8F5E9', // light green
@@ -26,6 +26,20 @@ const Model = (() => {
     '#F1F8E9', // light lime
     '#EDE7F6', // light deep purple
     '#E0F2F1', // light teal
+  ];
+
+  // Dark theme room colors (deeper/muted variants)
+  const ROOM_COLORS_DARK = [
+    '#1a3a5c', // deep blue
+    '#1a3c1e', // deep green
+    '#4a3520', // deep orange
+    '#3a1e4a', // deep purple
+    '#4a4520', // deep yellow
+    '#1a3a40', // deep cyan
+    '#4a1e2a', // deep pink
+    '#2a3c1a', // deep lime
+    '#2a1e4a', // deep deep purple
+    '#1a3a35', // deep teal
   ];
 
   function generateId() {
@@ -324,6 +338,7 @@ const Model = (() => {
     get labels() { return labels; },
     get rooms() { return rooms; },
     ROOM_COLORS,
+    ROOM_COLORS_DARK,
     addWall,
     removeWall,
     updateWall,

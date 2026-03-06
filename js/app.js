@@ -14,8 +14,53 @@
   const fileInput = document.getElementById('file-input');
   const snapCheckbox = document.getElementById('snap-enabled');
 
+  // ===== Theme =====
+  const THEME_KEY = 'roomPlanner_theme'; // localStorage key
+
+  /** Determine the effective theme based on saved preference or OS setting. */
+  function getEffectiveTheme() {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved === 'dark' || saved === 'light') return saved;
+    // Follow OS preference
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  /** Apply theme to DOM and canvas renderer. */
+  function applyTheme(theme) {
+    const root = document.documentElement;
+    const saved = localStorage.getItem(THEME_KEY);
+    if (saved) {
+      // Explicit user preference — set data-theme so it overrides the media query
+      root.setAttribute('data-theme', theme);
+    } else {
+      // No explicit preference — remove data-theme so CSS media query drives it
+      root.removeAttribute('data-theme');
+    }
+    CanvasRenderer.setTheme(theme);
+    CanvasRenderer.render();
+  }
+
+  /** Toggle between light and dark and persist the choice. */
+  function toggleTheme() {
+    const current = getEffectiveTheme();
+    const next = current === 'dark' ? 'light' : 'dark';
+    localStorage.setItem(THEME_KEY, next);
+    applyTheme(next);
+  }
+
+  // Listen for OS theme changes (only affects users who haven't explicitly toggled)
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+    const saved = localStorage.getItem(THEME_KEY);
+    if (!saved) {
+      applyTheme(getEffectiveTheme());
+    }
+  });
+
   // ===== Init modules =====
   CanvasRenderer.init(canvas);
+
+  // Apply theme immediately after canvas init (before first render)
+  applyTheme(getEffectiveTheme());
 
   function requestRender() {
     CanvasRenderer.render();
@@ -165,6 +210,9 @@
     Tools.setSnapEnabled(snapCheckbox.checked);
   });
 
+  // Theme toggle
+  document.getElementById('btn-theme-toggle').addEventListener('click', toggleTheme);
+
   // History change callback
   History.onChange(() => {
     updateRoomsList();
@@ -273,7 +321,7 @@
           <div class="prop-field">
             <label>Thickness</label>
             <input type="number" id="prop-thickness" value="${wall.thickness}" min="5" max="100" step="5">
-            <span style="font-size:11px;color:#999">cm</span>
+            <span class="prop-unit">cm</span>
           </div>
           <div class="prop-field">
             <label>Color</label>
@@ -294,7 +342,7 @@
           <div class="prop-field">
             <label>Width</label>
             <input type="number" id="prop-door-width" value="${door.width}" min="40" max="200" step="5">
-            <span style="font-size:11px;color:#999">cm</span>
+            <span class="prop-unit">cm</span>
           </div>
           <div class="prop-field">
             <label>Swing</label>
@@ -318,7 +366,7 @@
           <div class="prop-field">
             <label>Width</label>
             <input type="number" id="prop-win-width" value="${win.width}" min="30" max="300" step="10">
-            <span style="font-size:11px;color:#999">cm</span>
+            <span class="prop-unit">cm</span>
           </div>
           <div class="prop-field">
             <label></label>
@@ -339,7 +387,7 @@
           <div class="prop-field">
             <label>Size</label>
             <input type="number" id="prop-label-size" value="${label.fontSize}" min="8" max="48" step="1">
-            <span style="font-size:11px;color:#999">px</span>
+            <span class="prop-unit">px</span>
           </div>
           <div class="prop-field">
             <label>Color</label>

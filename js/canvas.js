@@ -25,6 +25,77 @@ const CanvasRenderer = (() => {
   let snapIndicator = null; // { x, y } to show snap point
   let hoverWall = null; // wall id being hovered (for door/window placement)
 
+  // ========== Theme colors ==========
+  const themes = {
+    light: {
+      canvasBg:           '#fafafa',
+      gridMinor:          '#e8e8e8',
+      gridMajor:          '#d0d0d0',
+      originCross:        '#bbb',
+      roomLabel:          '#555',
+      roomFallback:       '#E3F2FD',
+      wallSelected:       '#2196F3',
+      wallHover:          '#64B5F6',
+      wallEndpointSel:    '#1976D2',
+      doorColor:          '#8B4513',
+      doorSelected:       '#2196F3',
+      windowColor:        '#4FC3F7',
+      windowSelected:     '#2196F3',
+      dimTextBg:          'rgba(255,255,255,0.85)',
+      dimText:            '#666',
+      dimTick:            '#999',
+      dimDash:            '#bbb',
+      overallDimLabel:    '#333',
+      overallDimLine:     '#666',
+      overallDimExt:      '#999',
+      overallDimTextBg:   'rgba(250,250,250,0.9)',
+      labelBg:            'rgba(255,255,255,0.7)',
+      labelFallback:      '#333',
+      labelSelected:      '#2196F3',
+      ghostStroke:        '#2196F3',
+      ghostFill:          '#2196F3',
+      ghostLineCursor:    'rgba(33, 150, 243, 0.6)',
+      snapIndicator:      '#FF9800',
+      selHandleFill:      '#fff',
+      selHandleStroke:    '#2196F3',
+    },
+    dark: {
+      canvasBg:           '#1e1e1e',
+      gridMinor:          '#2e2e2e',
+      gridMajor:          '#3a3a3a',
+      originCross:        '#555',
+      roomLabel:          '#bbb',
+      roomFallback:       '#1a3a5c',
+      wallSelected:       '#42a5f5',
+      wallHover:          '#64B5F6',
+      wallEndpointSel:    '#64b5f6',
+      doorColor:          '#c08050',
+      doorSelected:       '#42a5f5',
+      windowColor:        '#4FC3F7',
+      windowSelected:     '#42a5f5',
+      dimTextBg:          'rgba(30,30,30,0.85)',
+      dimText:            '#aaa',
+      dimTick:            '#666',
+      dimDash:            '#555',
+      overallDimLabel:    '#ccc',
+      overallDimLine:     '#888',
+      overallDimExt:      '#666',
+      overallDimTextBg:   'rgba(30,30,30,0.9)',
+      labelBg:            'rgba(30,30,30,0.7)',
+      labelFallback:      '#ddd',
+      labelSelected:      '#42a5f5',
+      ghostStroke:        '#42a5f5',
+      ghostFill:          '#42a5f5',
+      ghostLineCursor:    'rgba(66, 165, 245, 0.6)',
+      snapIndicator:      '#FF9800',
+      selHandleFill:      '#2a2a2a',
+      selHandleStroke:    '#42a5f5',
+    }
+  };
+
+  let currentTheme = 'light';
+  let colors = themes.light;
+
   function init(canvasEl) {
     canvas = canvasEl;
     ctx = canvas.getContext('2d');
@@ -108,7 +179,7 @@ const CanvasRenderer = (() => {
     ctx.clearRect(0, 0, width, height);
 
     // Background
-    ctx.fillStyle = '#fafafa';
+    ctx.fillStyle = colors.canvasBg;
     ctx.fillRect(0, 0, width, height);
 
     drawGrid();
@@ -142,7 +213,7 @@ const CanvasRenderer = (() => {
     const screenGridSize = MINOR_GRID * zoom;
 
     if (screenGridSize >= 4) {
-      ctx.strokeStyle = '#e8e8e8';
+      ctx.strokeStyle = colors.gridMinor;
       ctx.lineWidth = 0.5;
       ctx.beginPath();
       for (let x = minX; x <= maxX; x += MINOR_GRID) {
@@ -166,7 +237,7 @@ const CanvasRenderer = (() => {
     const majorMinY = Math.floor(topLeft.y / MAJOR_GRID) * MAJOR_GRID;
     const majorMaxY = Math.ceil(bottomRight.y / MAJOR_GRID) * MAJOR_GRID;
 
-    ctx.strokeStyle = '#d0d0d0';
+    ctx.strokeStyle = colors.gridMajor;
     ctx.lineWidth = 0.8;
     ctx.beginPath();
     for (let x = majorMinX; x <= majorMaxX; x += MAJOR_GRID) {
@@ -183,7 +254,7 @@ const CanvasRenderer = (() => {
 
     // Origin indicator
     const origin = worldToScreen(0, 0);
-    ctx.strokeStyle = '#bbb';
+    ctx.strokeStyle = colors.originCross;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(origin.x - 10, origin.y);
@@ -199,7 +270,7 @@ const CanvasRenderer = (() => {
     ctx.save();
     for (const room of Model.rooms) {
       if (!room.polygon || room.polygon.length < 3) continue;
-      ctx.fillStyle = room.color || '#E3F2FD';
+      ctx.fillStyle = room.color || colors.roomFallback;
       ctx.globalAlpha = 0.4;
       ctx.beginPath();
       const first = worldToScreen(room.polygon[0].x, room.polygon[0].y);
@@ -216,7 +287,7 @@ const CanvasRenderer = (() => {
       const centroid = Geometry.polygonCentroid(room.polygon);
       const sc = worldToScreen(centroid.x, centroid.y);
       const areaSqM = room.area / 10000; // cm² to m²
-      ctx.fillStyle = '#555';
+      ctx.fillStyle = colors.roomLabel;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       if (room.label) {
@@ -242,7 +313,7 @@ const CanvasRenderer = (() => {
       const isSelected = selection && selection.type === 'wall' && selection.id === wall.id;
       const isHovered = hoverWall === wall.id;
 
-      ctx.strokeStyle = isSelected ? '#2196F3' : (isHovered ? '#64B5F6' : wall.color);
+      ctx.strokeStyle = isSelected ? colors.wallSelected : (isHovered ? colors.wallHover : wall.color);
       ctx.lineWidth = screenThickness;
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
@@ -254,7 +325,7 @@ const CanvasRenderer = (() => {
 
       // Draw endpoints
       const epRadius = Math.max(3, screenThickness / 2 + 1);
-      ctx.fillStyle = isSelected ? '#1976D2' : wall.color;
+      ctx.fillStyle = isSelected ? colors.wallEndpointSel : wall.color;
       ctx.beginPath();
       ctx.arc(s1.x, s1.y, epRadius, 0, Math.PI * 2);
       ctx.fill();
@@ -294,7 +365,7 @@ const CanvasRenderer = (() => {
       const p2 = worldToScreen(cx + ux * hw, cy + uy * hw);
       const screenThickness = Math.max(2, worldToScreenDist(wall.thickness)) + 4;
 
-      ctx.strokeStyle = '#fafafa'; // background color
+      ctx.strokeStyle = colors.canvasBg; // background color to clear wall
       ctx.lineWidth = screenThickness;
       ctx.lineCap = 'butt';
       ctx.beginPath();
@@ -307,7 +378,7 @@ const CanvasRenderer = (() => {
       const screenWidth = worldToScreenDist(door.width);
       const wallAngle = Math.atan2(dy, dx);
 
-      ctx.strokeStyle = isSelected ? '#2196F3' : '#8B4513';
+      ctx.strokeStyle = isSelected ? colors.doorSelected : colors.doorColor;
       ctx.lineWidth = 2;
 
       // Door hinge point and swing
@@ -338,7 +409,7 @@ const CanvasRenderer = (() => {
       // Small squares at door posts
       const post1 = worldToScreen(cx - ux * hw, cy - uy * hw);
       const post2 = worldToScreen(cx + ux * hw, cy + uy * hw);
-      ctx.fillStyle = isSelected ? '#2196F3' : '#8B4513';
+      ctx.fillStyle = isSelected ? colors.doorSelected : colors.doorColor;
       ctx.fillRect(post1.x - 3, post1.y - 3, 6, 6);
       ctx.fillRect(post2.x - 3, post2.y - 3, 6, 6);
     }
@@ -371,7 +442,7 @@ const CanvasRenderer = (() => {
       const p2 = worldToScreen(cx + ux * hw, cy + uy * hw);
       const screenThickness = Math.max(2, worldToScreenDist(wall.thickness)) + 4;
 
-      ctx.strokeStyle = '#fafafa';
+      ctx.strokeStyle = colors.canvasBg;
       ctx.lineWidth = screenThickness;
       ctx.lineCap = 'butt';
       ctx.beginPath();
@@ -381,7 +452,7 @@ const CanvasRenderer = (() => {
 
       // Draw window: two parallel lines with a line in middle
       const halfThick = wall.thickness / 2;
-      const color = isSelected ? '#2196F3' : '#4FC3F7';
+      const color = isSelected ? colors.windowSelected : colors.windowColor;
 
       for (const sign of [-1, 0, 1]) {
         const ox = nx * halfThick * sign * 0.7;
@@ -443,10 +514,10 @@ const CanvasRenderer = (() => {
       const metrics = ctx.measureText(text);
       const tw = metrics.width + 6;
       const th = 14;
-      ctx.fillStyle = 'rgba(255,255,255,0.85)';
+      ctx.fillStyle = colors.dimTextBg;
       ctx.fillRect(st.x - tw / 2, st.y - th / 2, tw, th);
 
-      ctx.fillStyle = '#666';
+      ctx.fillStyle = colors.dimText;
       ctx.fillText(text, st.x, st.y);
 
       // Tick marks at endpoints
@@ -454,7 +525,7 @@ const CanvasRenderer = (() => {
       const s2 = worldToScreen(wall.x2, wall.y2);
       const sn = { x: normal.x, y: normal.y };
 
-      ctx.strokeStyle = '#999';
+      ctx.strokeStyle = colors.dimTick;
       ctx.lineWidth = 0.8;
       for (const sp of [s1, s2]) {
         const tickLen = 6;
@@ -467,7 +538,7 @@ const CanvasRenderer = (() => {
       }
 
       // Dimension line
-      ctx.strokeStyle = '#bbb';
+      ctx.strokeStyle = colors.dimDash;
       ctx.lineWidth = 0.5;
       ctx.setLineDash([3, 3]);
       const dl1x = wall.x1 + normal.x * offsetDist;
@@ -514,9 +585,9 @@ const CanvasRenderer = (() => {
     const extLen = 10;    // extension line overshoot past dimension line
     const tickSize = 4;   // half-length of the 45-degree tick mark (screen px)
 
-    const dimColor = '#333';
-    const lineColor = '#666';
-    const extColor = '#999';
+    const dimColor = colors.overallDimLabel;
+    const lineColor = colors.overallDimLine;
+    const extColor = colors.overallDimExt;
 
     // ── Horizontal dimension (below the plan) ──
     if (planW >= 1) {
@@ -573,7 +644,7 @@ const CanvasRenderer = (() => {
       const metrics = ctx.measureText(text);
       const tw = metrics.width + 8;
       const th = 15;
-      ctx.fillStyle = 'rgba(250,250,250,0.9)';
+      ctx.fillStyle = colors.overallDimTextBg;
       ctx.fillRect(midX - tw / 2, midY + 3, tw, th);
       ctx.fillStyle = dimColor;
       ctx.fillText(text, midX, midY + 5);
@@ -633,7 +704,7 @@ const CanvasRenderer = (() => {
       ctx.save();
       ctx.translate(midSX, midSY);
       ctx.rotate(-Math.PI / 2);
-      ctx.fillStyle = 'rgba(250,250,250,0.9)';
+      ctx.fillStyle = colors.overallDimTextBg;
       ctx.fillRect(-tw / 2, 3, tw, th);
       ctx.fillStyle = dimColor;
       ctx.textAlign = 'center';
@@ -662,17 +733,17 @@ const CanvasRenderer = (() => {
       const th = label.fontSize + 8;
 
       if (isSelected) {
-        ctx.strokeStyle = '#2196F3';
+        ctx.strokeStyle = colors.labelSelected;
         ctx.lineWidth = 1.5;
         ctx.setLineDash([4, 2]);
         ctx.strokeRect(sp.x - tw / 2, sp.y - th / 2, tw, th);
         ctx.setLineDash([]);
       }
 
-      ctx.fillStyle = 'rgba(255,255,255,0.7)';
+      ctx.fillStyle = colors.labelBg;
       ctx.fillRect(sp.x - tw / 2, sp.y - th / 2, tw, th);
 
-      ctx.fillStyle = label.color || '#333';
+      ctx.fillStyle = label.color || colors.labelFallback;
       ctx.fillText(label.text, sp.x, sp.y);
     }
     ctx.restore();
@@ -683,7 +754,7 @@ const CanvasRenderer = (() => {
 
     // Draw completed wall chain points
     if (wallDrawPoints.length > 0) {
-      ctx.strokeStyle = '#2196F3';
+      ctx.strokeStyle = colors.ghostStroke;
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
@@ -698,7 +769,7 @@ const CanvasRenderer = (() => {
       // Draw points
       for (const pt of wallDrawPoints) {
         const sp = worldToScreen(pt.x, pt.y);
-        ctx.fillStyle = '#2196F3';
+        ctx.fillStyle = colors.ghostFill;
         ctx.beginPath();
         ctx.arc(sp.x, sp.y, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -708,7 +779,7 @@ const CanvasRenderer = (() => {
       ctx.font = '11px ' + getComputedStyle(document.body).fontFamily;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'bottom';
-      ctx.fillStyle = '#2196F3';
+      ctx.fillStyle = colors.ghostFill;
       for (let i = 1; i < wallDrawPoints.length; i++) {
         const p1 = wallDrawPoints[i - 1];
         const p2 = wallDrawPoints[i];
@@ -724,7 +795,7 @@ const CanvasRenderer = (() => {
       const s1 = worldToScreen(ghostLine.x1, ghostLine.y1);
       const s2 = worldToScreen(ghostLine.x2, ghostLine.y2);
 
-      ctx.strokeStyle = 'rgba(33, 150, 243, 0.6)';
+      ctx.strokeStyle = colors.ghostLineCursor;
       ctx.lineWidth = 2;
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
@@ -741,7 +812,7 @@ const CanvasRenderer = (() => {
         ctx.font = 'bold 12px ' + getComputedStyle(document.body).fontFamily;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'bottom';
-        ctx.fillStyle = '#2196F3';
+        ctx.fillStyle = colors.ghostFill;
         ctx.fillText((len / 100).toFixed(2) + ' m', sm.x, sm.y - 10);
       }
     }
@@ -753,7 +824,7 @@ const CanvasRenderer = (() => {
     if (!snapIndicator) return;
     ctx.save();
     const sp = worldToScreen(snapIndicator.x, snapIndicator.y);
-    ctx.strokeStyle = '#FF9800';
+    ctx.strokeStyle = colors.snapIndicator;
     ctx.lineWidth = 1.5;
 
     // Crosshair
@@ -783,8 +854,8 @@ const CanvasRenderer = (() => {
         const s1 = worldToScreen(wall.x1, wall.y1);
         const s2 = worldToScreen(wall.x2, wall.y2);
         for (const sp of [s1, s2]) {
-          ctx.fillStyle = '#fff';
-          ctx.strokeStyle = '#2196F3';
+          ctx.fillStyle = colors.selHandleFill;
+          ctx.strokeStyle = colors.selHandleStroke;
           ctx.lineWidth = 2;
           ctx.beginPath();
           ctx.arc(sp.x, sp.y, 6, 0, Math.PI * 2);
@@ -795,6 +866,21 @@ const CanvasRenderer = (() => {
     }
 
     ctx.restore();
+  }
+
+  // ========== Theme API ==========
+
+  function setTheme(name) {
+    currentTheme = (name === 'dark') ? 'dark' : 'light';
+    colors = themes[currentTheme];
+  }
+
+  function getTheme() {
+    return currentTheme;
+  }
+
+  function getThemeColors() {
+    return colors;
   }
 
   /** Export the current view as a data URL (PNG) */
@@ -856,9 +942,15 @@ const CanvasRenderer = (() => {
   }
 
   function exportPNG() {
-    // Render at current view
+    // Always export with light theme for print-friendliness
+    const prevTheme = currentTheme;
+    setTheme('light');
     render();
-    return canvas.toDataURL('image/png');
+    const dataUrl = canvas.toDataURL('image/png');
+    // Restore previous theme
+    setTheme(prevTheme);
+    render();
+    return dataUrl;
   }
 
   return {
@@ -881,6 +973,9 @@ const CanvasRenderer = (() => {
     setHoverWall,
     fitToView,
     exportPNG,
+    setTheme,
+    getTheme,
+    getThemeColors,
     get canvas() { return canvas; },
     get width() { return width; },
     get height() { return height; }
