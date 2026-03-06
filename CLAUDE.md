@@ -32,3 +32,15 @@ The app uses the **revealing module pattern** — each JS file defines a global 
 - **State serialization**: `Model.getState()` / `Model.setState()` produce/consume plain objects. Used by History, Storage, and JSON export.
 - **Pointer events**: The app uses Pointer Events (`pointerdown`, `pointermove`, `pointerup`) with window-level listeners for reliable drag behavior across all input types.
 - **No module system**: All modules communicate through globals. Load order in `index.html` matters.
+
+## Changelog
+
+`CHANGELOG.md` follows the [Common Changelog](https://common-changelog.org) style guide:
+
+- **Format**: `## [VERSION] - YYYY-MM-DD` headings with reference-style links to GitHub releases at the bottom of the file.
+- **Categories** in order: `Changed`, `Added`, `Removed`, `Fixed`. Only include categories that have entries.
+- **Changes** use imperative mood starting with a present-tense verb (e.g., `Add`, `Fix`, `Remove`). Each change must be self-describing regardless of its category heading.
+- **References** are required: every change line must link to a commit, PR, or issue in parentheses — e.g., `([`abc1234`](https://github.com/countzero/ai_room_planner/commit/abc1234))`.
+- **No noise**: exclude dotfile changes, dev-only dependency bumps, minor doc formatting, and other maintenance that doesn't affect the distributed software.
+- **Merge related changes**: if multiple commits address the same logical change, list them as one entry with multiple references.
+- **Initial releases** use a notice (`_First release._`) instead of listing every feature.
