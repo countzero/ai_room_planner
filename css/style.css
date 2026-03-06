@@ -335,6 +335,7 @@ html, body {
   position: relative;
   overflow: hidden;
   cursor: crosshair;
+  touch-action: none; /* Prevent browser from hijacking pointer events for gestures */
 }
 
 #planner-canvas {

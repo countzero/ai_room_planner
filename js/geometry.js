@@ -233,10 +233,13 @@ const Geometry = (() => {
             ck = (ck === k1) ? pointKey(w.x2, w.y2) : k1;
           }
 
-          // Compute signed area to filter out outer boundaries (keep only CW = positive area in screen coords)
+          // Compute signed area to filter out outer boundaries
+          // The left-hand rule traces right-turning (smallest CW angle) paths,
+          // producing CCW interior faces (negative area) in screen coords (Y-down).
+          // Keep only negative area polygons (interior rooms), discard positive (outer boundary).
           const polygon = getPolygonFromWalls(walls, pathWalls, pointKey, startKey);
           const area = signedPolygonArea(polygon);
-          if (area > 0) {
+          if (area < 0) {
             rooms.push({
               wallIds: [...pathWalls],
               polygon: polygon,

@@ -30,15 +30,21 @@
   }
 
   // ===== Canvas Event Binding =====
-  canvasContainer.addEventListener('mousedown', (e) => Tools.onMouseDown(e));
-  canvasContainer.addEventListener('mousemove', (e) => Tools.onMouseMove(e));
-  canvasContainer.addEventListener('mouseup', (e) => Tools.onMouseUp(e));
+  // Use pointer events for reliable pan/drag in modern browsers (Chrome, Edge, etc.)
+  canvasContainer.addEventListener('pointerdown', (e) => Tools.onMouseDown(e));
+  canvasContainer.addEventListener('pointermove', (e) => Tools.onMouseMove(e));
+  canvasContainer.addEventListener('pointerup', (e) => Tools.onMouseUp(e));
   canvasContainer.addEventListener('wheel', (e) => Tools.onWheel(e), { passive: false });
   canvasContainer.addEventListener('dblclick', (e) => Tools.onDblClick(e));
   canvasContainer.addEventListener('contextmenu', (e) => e.preventDefault());
 
-  // Window-level events for key and mouse up (handle releasing outside canvas)
-  window.addEventListener('mouseup', (e) => Tools.onMouseUp(e));
+  // Prevent Chrome auto-scroll on middle-click
+  canvasContainer.addEventListener('mousedown', (e) => {
+    if (e.button === 1) e.preventDefault();
+  });
+
+  // Window-level events for key and pointer up (handle releasing outside canvas)
+  window.addEventListener('pointerup', (e) => Tools.onMouseUp(e));
   window.addEventListener('keydown', (e) => handleKeyDown(e));
   window.addEventListener('keyup', (e) => Tools.onKeyUp(e));
 
@@ -185,6 +191,9 @@
     switch (e.key.toLowerCase()) {
       case 'v':
         Tools.setTool('select');
+        break;
+      case 'h':
+        Tools.setTool('grab');
         break;
       case 'w':
         Tools.setTool('wall');

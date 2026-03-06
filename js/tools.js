@@ -139,6 +139,11 @@ const Tools = (() => {
       panStartY = e.clientY;
       updateCursor();
       e.preventDefault();
+      e.stopPropagation();
+      // Capture pointer so we receive move/up events even outside canvas
+      if (e.target.setPointerCapture && e.pointerId !== undefined) {
+        e.target.setPointerCapture(e.pointerId);
+      }
       return;
     }
 
@@ -149,6 +154,16 @@ const Tools = (() => {
     switch (activeTool) {
       case 'select':
         handleSelectMouseDown(world, e);
+        break;
+      case 'grab':
+        isPanning = true;
+        panStartX = e.clientX;
+        panStartY = e.clientY;
+        updateCursor();
+        e.preventDefault();
+        if (e.target.setPointerCapture && e.pointerId !== undefined) {
+          e.target.setPointerCapture(e.pointerId);
+        }
         break;
       case 'wall':
         handleWallClick(world, e);
@@ -177,6 +192,7 @@ const Tools = (() => {
       CanvasRenderer.pan(dx, dy);
       panStartX = e.clientX;
       panStartY = e.clientY;
+      e.preventDefault();
       render();
       return;
     }
@@ -206,6 +222,10 @@ const Tools = (() => {
   function onMouseUp(e) {
     if (isPanning) {
       isPanning = false;
+      // Release pointer capture if it was set
+      if (e.target.releasePointerCapture && e.pointerId !== undefined) {
+        try { e.target.releasePointerCapture(e.pointerId); } catch (_) {}
+      }
       updateCursor();
       return;
     }
