@@ -10,6 +10,9 @@
 
 ### Fixed
 
+- Fix `_nextId` becoming `NaN` when loading state files where entities lack an `id` property, breaking all subsequent entity creation ([`fd70b5e`](https://github.com/countzero/ai_room_planner/commit/fd70b5e))
+- Fix dark theme room colors never being applied by wiring up `ROOM_COLORS_DARK` palette and migrating auto-assigned colors on theme toggle ([`fd70b5e`](https://github.com/countzero/ai_room_planner/commit/fd70b5e))
+- Fix color picker `change` event without prior `input` silently dropping the edit ([`fd70b5e`](https://github.com/countzero/ai_room_planner/commit/fd70b5e))
 - Fix room detection using wall array indices instead of entity IDs, causing incorrect rooms after wall deletion ([`123837f`](https://github.com/countzero/ai_room_planner/commit/123837f))
 - Fix walls not visually cut at door/window positions by computing gap segments instead of overdrawing with background color ([`123837f`](https://github.com/countzero/ai_room_planner/commit/123837f))
 - Fix door swing arc rendering for certain wall orientations in both canvas and SVG export ([`123837f`](https://github.com/countzero/ai_room_planner/commit/123837f))
