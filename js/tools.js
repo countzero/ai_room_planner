@@ -74,12 +74,13 @@ const Tools = (() => {
     if (!c) return;
     c.className = '';
     const canvas = CanvasRenderer.canvas;
-    if (isPanning) {
-      c.classList.add('cursor-grabbing');
-      if (canvas) canvas.style.cursor = 'grabbing';
-    } else if (spaceHeld) {
+    if (isPanning || spaceHeld) {
+      // Always use cursor-grab; the CSS :active pseudo-class handles
+      // the visual switch to cursor:grabbing while the mouse is pressed.
+      // This works because Chromium respects :active cursor changes natively,
+      // but ignores JS-driven cursor changes during an active pointer press.
       c.classList.add('cursor-grab');
-      if (canvas) canvas.style.cursor = 'grab';
+      if (canvas) canvas.style.cursor = '';
     } else {
       c.classList.add('cursor-' + activeTool);
       if (canvas) canvas.style.cursor = '';
