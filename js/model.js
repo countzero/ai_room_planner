@@ -42,6 +42,9 @@ const Model = (() => {
     '#1a3a35', // deep teal
   ];
 
+  // Active palette used for auto-assigning room colors
+  let currentPalette = ROOM_COLORS;
+
   function generateId() {
     return _nextId++;
   }
@@ -176,7 +179,7 @@ const Model = (() => {
       // Create a stable key from sorted wall IDs (entity .id values, not array indices)
       const key = r.wallIds.slice().sort((a, b) => a - b).join(',');
       const meta = roomMeta[key] || {
-        color: ROOM_COLORS[i % ROOM_COLORS.length],
+        color: currentPalette[i % currentPalette.length],
         label: ''
       };
       // Store back so it persists
@@ -238,13 +241,13 @@ const Model = (() => {
     roomMeta = state.roomMeta || {};
     _nextId = state.nextId ?? 1;
     // Ensure _nextId exceeds all existing entity IDs to prevent collisions
-    const maxId = Math.max(
-      0,
+    const allIds = [
       ...walls.map(w => w.id),
       ...doors.map(d => d.id),
       ...windows.map(w => w.id),
       ...labels.map(l => l.id)
-    );
+    ].filter(id => typeof id === 'number' && !isNaN(id));
+    const maxId = allIds.length ? Math.max(...allIds) : 0;
     if (_nextId <= maxId) {
       _nextId = maxId + 1;
     }
@@ -349,6 +352,20 @@ const Model = (() => {
     return best;
   }
 
+  /** Set the palette used for auto-assigning default room colors.
+   *  Rooms whose color matches the old palette get migrated to the new one. */
+  function setRoomPalette(palette) {
+    const oldPalette = currentPalette;
+    currentPalette = palette;
+    // Migrate rooms whose color still matches an old-palette default
+    for (const key of Object.keys(roomMeta)) {
+      const oldIdx = oldPalette.indexOf(roomMeta[key].color);
+      if (oldIdx !== -1) {
+        roomMeta[key].color = palette[oldIdx % palette.length];
+      }
+    }
+  }
+
   return {
     get walls() { return walls; },
     get doors() { return doors; },
@@ -357,6 +374,7 @@ const Model = (() => {
     get rooms() { return rooms; },
     ROOM_COLORS,
     ROOM_COLORS_DARK,
+    setRoomPalette,
     addWall,
     removeWall,
     updateWall,

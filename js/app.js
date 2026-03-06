@@ -37,6 +37,8 @@
       root.removeAttribute('data-theme');
     }
     CanvasRenderer.setTheme(theme);
+    Model.setRoomPalette(theme === 'dark' ? Model.ROOM_COLORS_DARK : Model.ROOM_COLORS);
+    Model.recalcRooms();
     CanvasRenderer.render();
   }
 
@@ -556,11 +558,14 @@
         onChange(el.value, false);
       });
       el.addEventListener('change', () => {
-        if (dirty) {
-          // Model already updated via input events; just save and reset
-          Storage.autoSave();
-          dirty = false;
+        if (!dirty) {
+          // change fired without prior input (e.g. some mobile browsers) —
+          // push history and update the model so the change isn't lost.
+          History.push();
+          onChange(el.value, false);
         }
+        Storage.autoSave();
+        dirty = false;
       });
     } else {
       // For text, number, select: only commit on 'change' (blur/Enter)
