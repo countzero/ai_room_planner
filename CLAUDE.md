@@ -23,6 +23,19 @@ The app uses the **revealing module pattern** — each JS file defines a global 
 7. **`svg-export.js`** → `SvgExport` — Resolution-independent SVG export. Generates a full SVG from plan data in world coordinates (cm) with viewBox mapping, reproducing all canvas layers (grid, rooms, walls with door/window gaps, doors with swing arcs, windows, dimension lines, labels).
 8. **`app.js`** — Entry point. Wires DOM events to Tools, binds toolbar buttons, manages the properties panel, rooms list UI, and toast notifications.
 
+## Plan File Format
+
+Full specification: [`docs/plan-format.md`](docs/plan-format.md) — JSON Schema: [`docs/plan-schema.json`](docs/plan-schema.json).
+
+- **Wall thickness conventions**: 24 cm for exterior walls, 12 cm for interior partitions.
+- **Programmatic loading** (browser console or automation): `Model.setState(state); CanvasRenderer.render();`
+- **`file://` limitation**: `fetch()` does not work from `file://` origins. To load a plan programmatically, inject the JSON object directly into `Model.setState()` rather than fetching a file.
+- **Import validation**: `wallId` on doors/windows must reference an existing wall `id`, wall coordinates must be finite numbers, and `roomMeta` must be a plain object. Invalid data is rejected with an error on import.
+
+## Testing
+
+There are no automated tests, linter, or CI pipeline. Verify changes by opening `index.html` in a browser and visually inspecting the result.
+
 ## Key Conventions
 
 - **Coordinate system**: World units are centimeters. Grid snaps to 10cm (minor) / 100cm=1m (major). Display converts to meters.
