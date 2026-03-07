@@ -4,7 +4,20 @@
 
 const Storage = (() => {
   const STORAGE_KEY = 'roomPlanner_state';
+  const DEFAULT_BASE_NAME = 'room-plan';
   let autoSaveTimer = null;
+  let _loadedBaseName = null;
+
+  /** Return the base name (without extension) for exports.
+   *  Falls back to the default when no file has been loaded. */
+  function getBaseName() {
+    return _loadedBaseName || DEFAULT_BASE_NAME;
+  }
+
+  /** Set (or clear) the base name used for exports. Pass null to reset. */
+  function setBaseName(name) {
+    _loadedBaseName = name || null;
+  }
 
   /**
    * Validate that a parsed JSON object has the expected structure for a plan state.
@@ -109,7 +122,7 @@ const Storage = (() => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'room-plan.json';
+    a.download = getBaseName() + '.json';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -127,6 +140,10 @@ const Storage = (() => {
           History.push(); // save current state before importing
           Model.setState(state);
           save();
+          // Remember the loaded filename (strip .json extension)
+          if (file.name) {
+            _loadedBaseName = file.name.replace(/\.json$/i, '');
+          }
           resolve(true);
         } catch (err) {
           reject(err);
@@ -142,7 +159,7 @@ const Storage = (() => {
     const dataUrl = CanvasRenderer.exportPNG();
     const a = document.createElement('a');
     a.href = dataUrl;
-    a.download = 'room-plan.png';
+    a.download = getBaseName() + '.png';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -160,6 +177,8 @@ const Storage = (() => {
     exportJSON,
     importJSON,
     exportPNG,
-    clearStorage
+    clearStorage,
+    getBaseName,
+    setBaseName
   };
 })();

@@ -199,6 +199,7 @@
       Model.clear();
       History.clear();
       Storage.clearStorage();
+      Storage.setBaseName(null);
       Tools.select(null);
       requestRender();
       updatePropertiesPanel(null);

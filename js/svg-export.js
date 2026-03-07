@@ -649,7 +649,7 @@ const SvgExport = (() => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'room-plan.svg';
+    a.download = Storage.getBaseName() + '.svg';
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
