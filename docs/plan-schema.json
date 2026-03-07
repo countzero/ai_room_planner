@@ -1,0 +1,217 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/countzero/ai_room_planner/docs/plan-schema.json",
+  "title": "Room Plan",
+  "description": "A 2D room plan for the ai_room_planner application. All coordinates and dimensions are in centimeters. The coordinate system uses screen convention: X increases to the right, Y increases downward.",
+  "type": "object",
+  "properties": {
+    "walls": {
+      "description": "Walls defined by two endpoints. Exterior walls are typically 24 cm thick, interior walls 12 cm. Walls form the structural skeleton of the plan; closed wall loops are automatically detected as rooms.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/wall"
+      },
+      "default": []
+    },
+    "doors": {
+      "description": "Doors placed on walls. Each door references a wall by its id and is positioned parametrically along that wall. Removing a wall automatically removes all its doors.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/door"
+      },
+      "default": []
+    },
+    "windows": {
+      "description": "Windows placed on walls. Each window references a wall by its id and is positioned parametrically along that wall. Removing a wall automatically removes all its windows.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/window"
+      },
+      "default": []
+    },
+    "labels": {
+      "description": "Text labels placed at arbitrary world positions. Used for room names, area annotations, orientation markers, etc.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/label"
+      },
+      "default": []
+    },
+    "roomMeta": {
+      "description": "Metadata for auto-detected rooms, keyed by a stable room identity string. The key is a comma-separated list of sorted wall IDs that form the room boundary (e.g. \"1,3,5,7\"). Rooms are detected automatically from closed wall polygons — they are never stored directly, only their metadata is persisted.",
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/roomMetaEntry"
+      },
+      "default": {}
+    },
+    "nextId": {
+      "description": "The next sequential ID to assign to new entities. On import, the application automatically adjusts this upward if any existing entity has an equal or higher ID, so this field is optional.",
+      "type": "integer",
+      "minimum": 1,
+      "default": 1
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "wall": {
+      "description": "A wall segment defined by two endpoints in world coordinates (cm).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique integer identifier. Must not collide with any other entity ID (wall, door, window, or label).",
+          "type": "integer"
+        },
+        "x1": {
+          "description": "X coordinate of the first endpoint in centimeters.",
+          "type": "number"
+        },
+        "y1": {
+          "description": "Y coordinate of the first endpoint in centimeters.",
+          "type": "number"
+        },
+        "x2": {
+          "description": "X coordinate of the second endpoint in centimeters.",
+          "type": "number"
+        },
+        "y2": {
+          "description": "Y coordinate of the second endpoint in centimeters.",
+          "type": "number"
+        },
+        "thickness": {
+          "description": "Wall thickness in centimeters.",
+          "type": "number",
+          "minimum": 5,
+          "maximum": 100,
+          "multipleOf": 5,
+          "default": 20
+        },
+        "color": {
+          "description": "Wall color as a CSS hex string.",
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#444444"
+        }
+      },
+      "required": ["id", "x1", "y1", "x2", "y2"]
+    },
+    "door": {
+      "description": "A door placed on a wall. The door creates a gap in the wall rendering and draws a swing arc.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique integer identifier.",
+          "type": "integer"
+        },
+        "wallId": {
+          "description": "The id of the wall this door is placed on. Must reference an existing wall.",
+          "type": "integer"
+        },
+        "position": {
+          "description": "Parametric position along the wall (0.0 = first endpoint, 1.0 = second endpoint). Clamped to [0.05, 0.95] on creation.",
+          "type": "number",
+          "minimum": 0.05,
+          "maximum": 0.95,
+          "default": 0.5
+        },
+        "width": {
+          "description": "Door width in centimeters.",
+          "type": "number",
+          "minimum": 40,
+          "maximum": 200,
+          "multipleOf": 5,
+          "default": 80
+        },
+        "openDirection": {
+          "description": "Which side the door swings open to, relative to the wall normal.",
+          "type": "string",
+          "enum": ["left", "right"],
+          "default": "left"
+        }
+      },
+      "required": ["id", "wallId", "position", "width", "openDirection"]
+    },
+    "window": {
+      "description": "A window placed on a wall. The window creates a gap in the wall rendering and draws three parallel lines (frame representation).",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique integer identifier.",
+          "type": "integer"
+        },
+        "wallId": {
+          "description": "The id of the wall this window is placed on. Must reference an existing wall.",
+          "type": "integer"
+        },
+        "position": {
+          "description": "Parametric position along the wall (0.0 = first endpoint, 1.0 = second endpoint). Clamped to [0.05, 0.95] on creation.",
+          "type": "number",
+          "minimum": 0.05,
+          "maximum": 0.95,
+          "default": 0.5
+        },
+        "width": {
+          "description": "Window width in centimeters.",
+          "type": "number",
+          "minimum": 30,
+          "maximum": 300,
+          "multipleOf": 10,
+          "default": 100
+        }
+      },
+      "required": ["id", "wallId", "position", "width"]
+    },
+    "label": {
+      "description": "A text label placed at a world coordinate position.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "description": "Unique integer identifier.",
+          "type": "integer"
+        },
+        "x": {
+          "description": "X position in centimeters (world coordinates).",
+          "type": "number"
+        },
+        "y": {
+          "description": "Y position in centimeters (world coordinates).",
+          "type": "number"
+        },
+        "text": {
+          "description": "The displayed text content.",
+          "type": "string",
+          "default": "Label"
+        },
+        "fontSize": {
+          "description": "Font size in pixels (used at 1:1 zoom).",
+          "type": "number",
+          "minimum": 8,
+          "maximum": 48,
+          "default": 14
+        },
+        "color": {
+          "description": "Text color as a CSS hex string.",
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$",
+          "default": "#333333"
+        }
+      },
+      "required": ["id", "x", "y", "text"]
+    },
+    "roomMetaEntry": {
+      "description": "Display metadata for an auto-detected room.",
+      "type": "object",
+      "properties": {
+        "color": {
+          "description": "Room fill color as a CSS hex string.",
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "label": {
+          "description": "Optional display label for the room.",
+          "type": "string"
+        }
+      }
+    }
+  }
+}
